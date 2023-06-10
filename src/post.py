@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 import glob
+import sys
 
 files = glob.glob("solution/phi_*.beq")
 number_solutions = len(files)
@@ -21,5 +22,9 @@ def animate(i):
     line.set_data(x_data, data)
     return line,
 
-anim = FuncAnimation(fig, animate, init_func=init, frames=number_solutions, interval = 20, blit=True)
+if "--repeat" in sys.argv:
+    repeat = True
+else:
+    repeat = False
+anim = FuncAnimation(fig, animate, repeat=repeat, init_func=init, frames=number_solutions, interval = 20, blit=True)
 plt.show()
