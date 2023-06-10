@@ -1,0 +1,10 @@
+{
+    "number_cells": 1000,
+    "length": 10,
+    "velocity": 100,
+    "max_step": 1000,
+    "max_time": 0.1,
+    "print_frequency": 100,
+    "plot_frequency": 10,
+    "cfl": 1.0
+}
