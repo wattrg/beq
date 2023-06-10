@@ -3,9 +3,6 @@
 import json
 import os
 import sys
-import shutil
-
-from matplotlib.pyplot import delaxes
 
 class _Config:
     _json_values = [
