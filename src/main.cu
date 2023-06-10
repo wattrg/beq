@@ -1,7 +1,9 @@
+#include <exception>
 #include <iostream>
 #include <fstream>
 #include <math.h>
 #include <filesystem>
+#include <stdexcept>
 
 #include "config.h"
 
@@ -9,7 +11,6 @@
 #define STRINGIFY(x) _STRINGIFY(x)
 
 const int BLOCK_SIZE = 256;
-const double PI = 3.14159265;
 int number_solutions = 0;
 
 void print_header() {
@@ -58,14 +59,21 @@ void take_step(double *phi, double *phi_new, double *residual, double u, double 
     phi_new = phi_tmp;
 }
 
-void fill_initial_condition(double *phi, double dx, int n) {
-    double sigma = 0.4;
-    double x0 = 2.0;
-    // initialise the data
-    for (int i = 0; i < n; i++){
-        double x = (i + 0.5) * dx;
-        double exponent = 0.5 * (x - x0) / sigma;
-        phi[i] = 1.0 / (sigma * sqrt(2*PI)) * exp(-exponent*exponent);
+void read_initial_condition(double *phi, int n) {
+    std::ifstream initial_condition("solution/phi_0.beq");
+    std::string phi_ic;
+    int i = 0;
+    while (getline(initial_condition, phi_ic)) {
+        if (i >= n) {
+            initial_condition.close();
+            throw new std::runtime_error("Too many values in IC");
+        }
+        phi[i] = std::stod(phi_ic); 
+        i++;
+    }
+    initial_condition.close();
+    if (i != n){
+        throw new std::runtime_error("Too few values in IC");
     }
 }
 
@@ -89,21 +97,21 @@ int main() {
 
 
     // unpack some config data
-    Config config = Config("config/config.json");
-    int N = config.number_cells();
-    double L = config.length();
-    double u = config.velocity();
+    const Config config = Config("config/config.json");
+    int N = config.number_cells;
+    double L = config.length;
+    double u = config.velocity;
     const int number_blocks = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
     double dx = L / N;
-    double dt = config.cfl() * dx / u;
-    int print_frequency = config.print_frequency();
-    int plot_frequency = config.plot_frequency();
-    double max_time = config.max_time();
-    int max_step = config.max_step();
+    double dt = config.cfl * dx / u;
+    int print_frequency = config.print_frequency;
+    int plot_frequency = config.plot_frequency;
+    double max_time = config.max_time;
+    int max_step = config.max_step;
 
     // allocate memory on host
     double *phi = new double[N];
-    fill_initial_condition(phi, dx, N);
+    read_initial_condition(phi, N);
 
     // allocate memory on GPU
     double *phi_gpu, *phi_new_gpu, *residual_gpu;

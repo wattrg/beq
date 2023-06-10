@@ -13,9 +13,10 @@ SRCDIR     := src
 INCDIR     := include
 BUILDDIR   := build/obj
 TARGETDIR  := build/target
-INSTALLDIR := inst/bin
-LIBINSTDIR := inst/lib
+INSTALLDIR := inst
+LIBINSTDIR := $(LIBINSTDIR)/lib
 LIBDIR     := build/lib
+RESOURCES  := resources
 RESDIR     := res
 SRCEXT     := cu
 DEPEXT     := d
@@ -63,8 +64,8 @@ OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJE
 
 CUDA_CFLAGS := $(foreach option, $(CFLAGS), --compiler-options $(option))
 CUDA_VERSION_FLAGS:= --compiler-options -DGIT_HASH="\"$(GIT_HASH)\"" --compiler-options -DCOMPILE_TIME="\"$(COMPILE_TIME)\"" --compiler-options -DGIT_BRANCH="\"$(GIT_BRANCH)\""
-CFLAGS := $(CUDA_CFLAGS)
-VERSION_FLAGS := $(CUDA_VERSION_FLAGS)
+# CFLAGS := $(CUDA_CFLAGS)
+# VERSION_FLAGS := $(CUDA_VERSION_FLAGS)
 
 #Default Make
 all: directories $(TARGET) install
@@ -86,8 +87,11 @@ echo_version_flags:
 	@echo $(VERSION_FLAGS)
 
 install: build $(TARGET) 
-	@mkdir -p $(INSTALLDIR)
-	cp $(TARGETDIR)/* $(INSTALLDIR)
+	@mkdir -p $(INSTALLDIR)/bin
+	cp -r $(TARGETDIR)/* $(INSTALLDIR)/bin
+	cp -p $(SRCDIR)/prep.py $(INSTALLDIR)/bin/beq_prep
+	cp -p $(SRCDIR)/post.py $(INSTALLDIR)/bin/beq_post
+	cp -r $(RESOURCES) $(INSTALLDIR)/resources
 	@echo Finished installation
 
 # Compile only
@@ -102,14 +106,6 @@ directories:
 	@mkdir -p $(TARGETDIR)
 	@mkdir -p $(BUILDDIR)
 	@mkdir -p $(LIBDIR)
-	@mkdir -p $(BUILDDIR)/gas
-	@mkdir -p $(BUILDDIR)/util
-	@mkdir -p $(BUILDDIR)/io
-	@mkdir -p $(BUILDDIR)/finite_volume
-	@mkdir -p $(BUILDDIR)/grid
-	@mkdir -p $(BUILDDIR)/solvers
-	@mkdir -p $(BUILDDIR)/finite_volume/boundary_conditions
-	@mkdir -p $(BUILDDIR)/finite_volume/io
 
 #Clean only Objecst
 clean:
@@ -125,22 +121,22 @@ cleaner:
 
 #Link
 $(TARGET): $(OBJECTS)
-	$(NVCC) $(CFLAGS) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
+	$(NVCC) $(CUDA_CFLAGS) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
 
 #Compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
-	$(NVCC) $(CFLAGS) $(VERSION_FLAGS) $(INC) -c -o $@ $< 
-	$(NVCC) $(CFLAGS) $(VERSION_FLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) -c -o $@ $< 
+	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
 # make the dynamic libraries
-# $(BUILDDIR)/lib/aeolus.so: $(OBJECTS)
-# 	$(CC) $(CFLAGS) -shared $(VERSION_FLAGS) $(PYBIND11) $(SRCDIR)/python_api/lib.cpp -o $(LIBDIR)/aeolus.so $^ $(LIB)
-
-# lib: directories $(BUILDDIR)/lib/aeolus.so
+# $(BUILDDIR)/lib/beq.so: $(OBJECTS)
+# 	$(CC) $(CFLAGS) -shared $(VERSION_FLAGS) $(PYBIND11) $(SRCDIR)/python_api/lib.cpp -o $(LIBDIR)/beq.so $^ $(LIB)
+#
+# lib: directories $(BUILDDIR)/lib/beq.so
 # 	@echo Finished building python library
 #
 # install_lib: lib
