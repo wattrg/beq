@@ -49,14 +49,9 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
     }
 }
 
-void take_step(double *phi, double *phi_new, double *residual, double u, double dx, double dt, int n, int number_blocks) {
+void euler_step(double *phi, double *residual, double u, double dx, double dt, int n, int number_blocks) {
     eval_rhs<<<number_blocks, BLOCK_SIZE>>>(phi, residual, u, dx, n);
-    apply_residual<<<number_blocks, BLOCK_SIZE>>>(phi, phi_new, residual, dt, n);
-
-    // swap phi and phi_new
-    double *phi_tmp = phi;
-    phi = phi_new;
-    phi_new = phi_tmp;
+    apply_residual<<<number_blocks, BLOCK_SIZE>>>(phi, phi, residual, dt, n);
 }
 
 void read_initial_condition(double *phi, int n) {
@@ -114,9 +109,8 @@ int main() {
     read_initial_condition(phi, N);
 
     // allocate memory on GPU
-    double *phi_gpu, *phi_new_gpu, *residual_gpu;
+    double *phi_gpu, *residual_gpu;
     cudaMalloc(&phi_gpu, N*sizeof(double));
-    cudaMalloc(&phi_new_gpu, N*sizeof(double));
     cudaMalloc(&residual_gpu, N*sizeof(double));
 
 
@@ -125,7 +119,7 @@ int main() {
 
     double t = 0;
     for (int step = 0; step < max_step; step++){
-        take_step(phi_gpu, phi_gpu, residual_gpu, u, dx, dt, N, number_blocks);
+        euler_step(phi_gpu, residual_gpu, u, dx, dt, N, number_blocks);
         t += dt;
 
         if (step % plot_frequency == 0){
@@ -149,7 +143,6 @@ int main() {
 
     // free device memory
     cudaFree(phi_gpu);
-    cudaFree(phi_new_gpu);
     cudaFree(residual_gpu);
     
     return 0;
