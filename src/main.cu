@@ -123,11 +123,6 @@ int main() {
     // copy initial condition to the GPU
     cudaMemcpy(phi_gpu, phi, N*sizeof(double), cudaMemcpyHostToDevice);
 
-    // write initial condition
-    std::filesystem::create_directory("solution");
-    write_solution(phi_gpu, phi, N);
-
-
     double t = 0;
     for (int step = 0; step < max_step; step++){
         take_step(phi_gpu, phi_gpu, residual_gpu, u, dx, dt, N, number_blocks);
