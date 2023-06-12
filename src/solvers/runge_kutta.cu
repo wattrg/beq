@@ -26,6 +26,7 @@ RungeKutta::RungeKutta(json json_config, Domain &domain)
 
 RungeKutta::~RungeKutta() {
     delete this->_residual;
+    delete this->_phi_cpu;
     for (int stage = 0; stage < _n_stages; stage++){
         delete this->_phi_buffers[stage];
     }
