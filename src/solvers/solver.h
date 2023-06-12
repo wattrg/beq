@@ -9,6 +9,7 @@
 
 class Solver {
 public:
+    virtual ~Solver() {};
     void solve(Equation &equation, Domain &domain) {
         while (true) {
             _take_step(equation, domain);

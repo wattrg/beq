@@ -53,5 +53,8 @@ int main() {
 
     solver->set_initial_condition();
     solver->solve(*equation, domain);  
+
+    delete solver;
+    delete equation;
     return 0;
 }

@@ -9,6 +9,7 @@ using json = nlohmann::json;
 
 class Equation {
 public:
+    virtual ~Equation() {}
     virtual void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain) = 0;
     virtual double allowable_dt(Domain &domain) = 0;
         
