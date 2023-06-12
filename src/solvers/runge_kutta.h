@@ -28,8 +28,8 @@ private:
     int _plot_every_n_steps;
     int _n_solutions = 1;
     double _cfl;
-    Field<double> _phi_cpu;
-    Field<double> _residual;
+    Field<double> *_phi_cpu;
+    Field<double> *_residual;
     std::vector<Field<double>*> _phi_buffers;
 
 

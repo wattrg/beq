@@ -15,15 +15,17 @@ RungeKutta::RungeKutta(json json_config, Domain &domain)
 
     // allocate memory
     unsigned n = domain.number_cells();
-    this->_phi_cpu = Field<double>(n, false); // allocated on CPU
-    this->_residual = Field<double>(n, true); // allocated on GPU
+    this->_phi_cpu = new Field<double>(n, false); // allocated on CPU
+    this->_residual = new Field<double>(n, true); // allocated on GPU
     for (int stage = 0; stage < _n_stages; stage++) {
-        this->_phi_buffers.push_back(new Field<double>(n, true));
+        Field<double> * field = new Field<double>(n, true);
+        this->_phi_buffers.push_back(field);
     }
 }
 
 
 RungeKutta::~RungeKutta() {
+    delete this->_residual;
     for (int stage = 0; stage < _n_stages; stage++){
         delete this->_phi_buffers[stage];
     }
@@ -42,19 +44,19 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
 void RungeKutta::_take_step(Equation &equation, Domain &domain) {
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
-    equation.eval_residual(*_phi_buffers[0], _residual, domain);
+    equation.eval_residual(*_phi_buffers[0], *_residual, domain);
     double dt = _cfl * equation.allowable_dt(domain);
 
     apply_residual<<<n_blocks,block_size>>>(
-        _phi_buffers[0]->data(), _phi_buffers[0]->data(), 
-        _residual.data(), dt, domain.number_cells()
+        _phi_buffers[0]->data(), _phi_buffers[0]->data(), _residual->data(), 
+        dt, domain.number_cells()
     );
-
     auto code = cudaGetLastError();
     if (code != cudaSuccess) {
         std::cerr << "Cuda error in RungeKutta step: " << cudaGetErrorString(code) << std::endl;
         throw new std::runtime_error("Encountered cuda error");
     }
+
     _t += dt;
 }
 
@@ -79,13 +81,13 @@ bool RungeKutta::_print_this_step() {
 
 void RungeKutta::_write_solution() {
     // copy solution to CPU
-    cudaMemcpy(_phi_cpu.data(), _phi_buffers[0]->data(), _phi_cpu.memory(), cudaMemcpyDeviceToHost);
+    cudaMemcpy(_phi_cpu->data(), _phi_buffers[0]->data(), _phi_cpu->memory(), cudaMemcpyDeviceToHost);
 
     // write contents of cpu buffer to file
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
-    for (unsigned i = 0; i < _phi_cpu.length(); i++){
-        file << _phi_cpu(i);
+    for (unsigned i = 0; i < _phi_cpu->length(); i++){
+        file << (*_phi_cpu)(i);
         file << "\n";
     }
     file.close();
@@ -109,19 +111,28 @@ void RungeKutta::set_initial_condition() {
     std::ifstream initial_condition("solution/phi_0.beq");
     std::string phi_ic;
     unsigned i = 0;
+    double *phi = _phi_cpu->data();
     while (getline(initial_condition, phi_ic)) {
-        if (i >= _phi_cpu.length()) {
+        if (i >= _phi_cpu->length()) {
             initial_condition.close();
             throw new std::runtime_error("Too many values in IC");
         }
-        _phi_cpu(i) = std::stod(phi_ic); 
+        phi[i] = std::stod(phi_ic); 
         i++;
     }
     initial_condition.close();
-    if (i != _phi_cpu.length()){
+    if (i != _phi_cpu->length()){
         throw new std::runtime_error("Too few values in IC");
     }
 
     // copy initial condition to GPU buffer
-    cudaMemcpy(_phi_buffers[0]->data(), _phi_cpu.data(), _phi_cpu.memory(), cudaMemcpyHostToDevice);
+    auto code = cudaMemcpy(
+        _phi_buffers[0]->data(), _phi_cpu->data(), _phi_cpu->memory(), 
+        cudaMemcpyHostToDevice
+    );
+
+    if (code != cudaSuccess) {
+        std::cerr << "Cuda error setting initial condition: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("Encountered cuda error");
+    }
 }

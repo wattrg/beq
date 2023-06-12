@@ -13,10 +13,11 @@ struct Field {
         : _length(length), _components(components), _gpu(gpu)
     {
         if (_gpu) {
-            auto code = cudaMalloc(&_data, _length*_components*sizeof(T)); 
+            auto code = cudaMalloc(&_data, _length * _components * sizeof(T)); 
 
             if (code != cudaSuccess) {
                 std::cerr << "cudaMalloc failure: " << cudaGetErrorString(code) << std::endl;
+                throw new std::runtime_error("");
             }
         } 
         else {
@@ -42,19 +43,19 @@ struct Field {
         return _data[i];
     }
 
-    T& operator() (unsigned i, unsigned j) {
-        assert(i < _length && j < _components);
-        return _data[i*_length + j];
+    T& operator() (unsigned i, unsigned comp) {
+        assert(i < _length && comp < _components);
+        return _data[i*_length + comp];
     }
 
     unsigned length () const { return _length; }
     unsigned number_components () const { return _components; }
     unsigned size() const { return _components * _length; }
-    std::size_t memory() const { return size() * sizeof(T); }
+    std::size_t memory() const { return _components * _length * sizeof(T); }
     T* data() { return _data; }
 
 private:
-    T * _data;
+    T * _data = nullptr;
     unsigned _length;
     unsigned _components;
     bool _gpu;

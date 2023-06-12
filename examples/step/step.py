@@ -15,9 +15,9 @@ def initial_condition(x):
         return 0.0
 
 config.solver = RungeKutta()
-config.solver.max_step = 10000
+config.solver.max_step = 100000
 config.solver.max_time = 1 * flow_time
-config.solver.print_frequency = 100
+config.solver.print_frequency = 10
 config.solver.plot_frequency = 10
 config.solver.cfl = 1.0
 

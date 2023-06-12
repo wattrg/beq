@@ -23,7 +23,7 @@ public:
     double dx() const {return _length / _number_cells;}
 
     unsigned block_size() const {
-        return fmin(_number_cells, BLOCK_SIZE);
+        return BLOCK_SIZE;
     }
 
     unsigned number_blocks() const {

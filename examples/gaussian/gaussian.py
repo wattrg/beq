@@ -6,7 +6,7 @@ dx = L / n
 u = 100
 flow_time = L / u
 sigma = 0.4
-x0 = 2.0
+x0 = L / 2
 
 def initial_condition(x):
     exponent = 0.5 * (x - x0) / sigma;
@@ -21,9 +21,9 @@ config.equation = Advection()
 config.equation.velocity = u
 
 config.solver = RungeKutta()
-config.solver.max_step = 10
+config.solver.max_step = 10000
 config.solver.max_time = flow_time
 config.solver.print_frequency = 100
 config.solver.plot_frequency = 1
-config.solver.cfl = 0.5
+config.solver.cfl = 1.0
 config.initial_condition = initial_condition
