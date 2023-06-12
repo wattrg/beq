@@ -1,0 +1,9 @@
+{
+    "type": "runge_kutta",
+    "number_stages": 1,
+    "max_step": 10,
+    "max_time": 1.0,
+    "print_frequency": 1,
+    "plot_frequency": 1,
+    "cfl": 1.0
+}

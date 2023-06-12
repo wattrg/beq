@@ -105,6 +105,8 @@ remake: cleaner all
 directories:
 	@mkdir -p $(TARGETDIR)
 	@mkdir -p $(BUILDDIR)
+	@mkdir -p $(BUILDDIR)/solvers
+	@mkdir -p $(BUILDDIR)/equations
 	@mkdir -p $(LIBDIR)
 
 #Clean only Objecst

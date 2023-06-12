@@ -1,0 +1,127 @@
+#include <fstream>
+#include "runge_kutta.h"
+
+RungeKutta::RungeKutta(json json_config, Domain &domain) 
+    : _t(0.0)
+{
+    // read configuration
+    this->_cfl = json_config.at("cfl"); 
+    this->_n_stages = json_config.at("number_stages");
+    this->_max_time = json_config.at("max_time");
+    this->_max_steps = json_config.at("max_step");
+    this->_print_frequency = json_config.at("print_frequency");
+    this->_plot_every_n_steps = json_config.at("plot_frequency");
+    this->_t = 0;
+
+    // allocate memory
+    unsigned n = domain.number_cells();
+    this->_phi_cpu = Field<double>(n, false); // allocated on CPU
+    this->_residual = Field<double>(n, true); // allocated on GPU
+    for (int stage = 0; stage < _n_stages; stage++) {
+        this->_phi_buffers.push_back(new Field<double>(n, true));
+    }
+}
+
+
+RungeKutta::~RungeKutta() {
+    for (int stage = 0; stage < _n_stages; stage++){
+        delete this->_phi_buffers[stage];
+    }
+}
+
+__global__
+void apply_residual(double *phi, double *phi_new, double *residual, double dt, int n){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < n; i += stride) {
+        phi_new[i] =  phi[i] + residual[i] * dt;
+    }
+}
+
+void RungeKutta::_take_step(Equation &equation, Domain &domain) {
+    unsigned n_blocks = domain.number_blocks();
+    unsigned block_size = domain.block_size();
+    equation.eval_residual(*_phi_buffers[0], _residual, domain);
+    double dt = _cfl * equation.allowable_dt(domain);
+
+    apply_residual<<<n_blocks,block_size>>>(
+        _phi_buffers[0]->data(), _phi_buffers[0]->data(), 
+        _residual.data(), dt, domain.number_cells()
+    );
+
+    auto code = cudaGetLastError();
+    if (code != cudaSuccess) {
+        std::cerr << "Cuda error in RungeKutta step: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("Encountered cuda error");
+    }
+    _t += dt;
+}
+
+bool RungeKutta::_stop() {
+    return (_t >= _max_time || step_number() >= _max_steps);
+}
+
+std::string RungeKutta::_stop_reason() {
+    std::string reason;
+    if (_t >= _max_time) {
+        reason = std::string("Reached max_time");
+    }
+    if (step_number() >= _max_steps) {
+        reason = std::string("Reached max_step");
+    }
+    return reason;
+}
+
+bool RungeKutta::_print_this_step() {
+    return (step_number() % _print_frequency == 0);
+}
+
+void RungeKutta::_write_solution() {
+    // copy solution to CPU
+    cudaMemcpy(_phi_cpu.data(), _phi_buffers[0]->data(), _phi_cpu.memory(), cudaMemcpyDeviceToHost);
+
+    // write contents of cpu buffer to file
+    std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
+    std::ofstream file(file_name);
+    for (unsigned i = 0; i < _phi_cpu.length(); i++){
+        file << _phi_cpu(i);
+        file << "\n";
+    }
+    file.close();
+    _n_solutions++;
+}
+
+std::string RungeKutta::_print_progress() {
+    std::string progress ("Step: ");
+    progress.append(std::to_string(step_number()));
+    progress.append(", t = ");
+    progress.append(std::to_string(_t));
+    return progress;
+}
+
+bool RungeKutta::_plot_this_step() {
+    return (step_number() % _plot_every_n_steps == 0);
+}
+
+void RungeKutta::set_initial_condition() {
+    // read initial condition from file
+    std::ifstream initial_condition("solution/phi_0.beq");
+    std::string phi_ic;
+    unsigned i = 0;
+    while (getline(initial_condition, phi_ic)) {
+        if (i >= _phi_cpu.length()) {
+            initial_condition.close();
+            throw new std::runtime_error("Too many values in IC");
+        }
+        _phi_cpu(i) = std::stod(phi_ic); 
+        i++;
+    }
+    initial_condition.close();
+    if (i != _phi_cpu.length()){
+        throw new std::runtime_error("Too few values in IC");
+    }
+
+    // copy initial condition to GPU buffer
+    cudaMemcpy(_phi_buffers[0]->data(), _phi_cpu.data(), _phi_cpu.memory(), cudaMemcpyHostToDevice);
+}
