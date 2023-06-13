@@ -24,6 +24,6 @@ config.solver = RungeKutta()
 config.solver.max_step = 10000
 config.solver.max_time = flow_time
 config.solver.print_frequency = 100
-config.solver.plot_frequency = 1
+config.solver.plot_frequency = flow_time / 20
 config.solver.cfl = 1.0
 config.initial_condition = initial_condition

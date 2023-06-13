@@ -66,6 +66,7 @@ class RungeKutta(_JsonData):
         "max_step",
         "max_time",
         "print_frequency",
+        "plot_every_n_steps",
         "plot_frequency",
         "cfl",
     ]

@@ -18,7 +18,7 @@ config.solver = RungeKutta()
 config.solver.max_step = 100000
 config.solver.max_time = 1 * flow_time
 config.solver.print_frequency = 10
-config.solver.plot_frequency = 1
+config.solver.plot_frequency = flow_time / 20
 config.solver.cfl = 1.0
 
 config.domain = Domain()

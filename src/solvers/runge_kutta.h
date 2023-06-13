@@ -26,6 +26,8 @@ private:
     int _max_steps;
     int _print_frequency;
     int _plot_every_n_steps;
+    double _plot_frequency;
+    double _time_since_last_plot;
     int _n_solutions = 1;
     double _cfl;
     Field<double> *_phi_cpu;

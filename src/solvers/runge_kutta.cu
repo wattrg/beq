@@ -10,8 +10,8 @@ RungeKutta::RungeKutta(json json_config, Domain &domain)
     this->_max_time = json_config.at("max_time");
     this->_max_steps = json_config.at("max_step");
     this->_print_frequency = json_config.at("print_frequency");
-    this->_plot_every_n_steps = json_config.at("plot_frequency");
-    this->_t = 0;
+    this->_plot_every_n_steps = json_config.at("plot_every_n_steps");
+    this->_plot_frequency = json_config.at("plot_frequency");
 
     // allocate memory
     unsigned n = domain.number_cells();
@@ -59,6 +59,7 @@ void RungeKutta::_take_step(Equation &equation, Domain &domain) {
     }
 
     _t += dt;
+    _time_since_last_plot += dt;
 }
 
 bool RungeKutta::_stop() {
@@ -92,6 +93,7 @@ void RungeKutta::_write_solution() {
         file << "\n";
     }
     file.close();
+    _time_since_last_plot = _t - _n_solutions * _plot_frequency;
     _n_solutions++;
 }
 
@@ -104,7 +106,9 @@ std::string RungeKutta::_print_progress() {
 }
 
 bool RungeKutta::_plot_this_step() {
-    return (step_number() % _plot_every_n_steps == 0);
+    bool plot_step = _plot_every_n_steps > 0 && step_number() % _plot_every_n_steps == 0;
+    bool plot_time = _plot_frequency > 0 && _time_since_last_plot >= _plot_frequency;
+    return (plot_step || plot_time);
 }
 
 void RungeKutta::set_initial_condition() {

@@ -4,6 +4,7 @@
     "max_step": 10,
     "max_time": 1.0,
     "print_frequency": 1,
-    "plot_frequency": 1,
+    "plot_frequency": 1.0,
+    "plot_every_n_steps": -1,
     "cfl": 1.0
 }
