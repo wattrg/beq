@@ -1,4 +1,4 @@
 build/
 inst/
-examples/*/solution
-examples/*/config
+examples/**/solution
+examples/**/config
