@@ -10,9 +10,9 @@ dx = L / n
 
 def initial_condition(x):
     if x < L / 3 or x > 2 * L / 3:
-        return 1.0
-    else:
         return 0.0
+    else:
+        return 1.0
 
 config.solver = RungeKutta()
 config.solver.max_step = 100000

@@ -29,9 +29,8 @@ void Advection::eval_residual(Field<double> &phi, Field<double> &residual, Domai
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
 
-
     eval_advection_residual<<<n_blocks,block_size>>>(
-        phi.data(), residual.data(), _velocity, domain.dx(), phi.length()
+        phi.data(), residual.data(), _velocity, domain.dx(), phi.size()
     );
 
     auto code = cudaGetLastError();

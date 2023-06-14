@@ -6,6 +6,9 @@ Equation * create_equation(json json_data){
     if (type == "advection"){
         eq = new Advection(json_data);
     }
+    else if (type == "burgers") {
+        eq = new Burgers();
+    }
     else {
         throw new std::runtime_error("Unknwon equation type");
     }

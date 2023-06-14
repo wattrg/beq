@@ -45,25 +45,31 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
 void RungeKutta::_take_step(Equation &equation, Domain &domain) {
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
-    equation.eval_residual(*_phi_buffers[0], *_residual, domain);
-    double dt = _cfl * equation.allowable_dt(domain);
 
-    apply_residual<<<n_blocks,block_size>>>(
-        _phi_buffers[0]->data(), _phi_buffers[0]->data(), _residual->data(), 
-        dt, domain.number_cells()
-    );
-    auto code = cudaGetLastError();
-    if (code != cudaSuccess) {
-        std::cerr << "Cuda error in RungeKutta step: " << cudaGetErrorString(code) << std::endl;
-        throw new std::runtime_error("Encountered cuda error");
+    double dt = _cfl * equation.allowable_dt(*_phi_buffers[0], domain);
+
+    for (int stage = 0; stage < _n_stages; stage++){
+        equation.eval_residual(*_phi_buffers[stage], *_residual, domain);
+
+        apply_residual<<<n_blocks,block_size>>>(
+            _phi_buffers[stage]->data(), _phi_buffers[stage]->data(), _residual->data(), 
+            dt, domain.number_cells()
+        );
+        auto code = cudaGetLastError();
+        if (code != cudaSuccess) {
+            std::cerr << "Cuda error in RungeKutta step: " << cudaGetErrorString(code) << std::endl;
+            throw new std::runtime_error("Encountered cuda error");
+        }
+
     }
+
 
     _t += dt;
     _time_since_last_plot += dt;
 }
 
 bool RungeKutta::_stop() {
-    return (_t >= _max_time || step_number() >= _max_steps);
+    return (_t >= _max_time || _step_number() >= _max_steps);
 }
 
 std::string RungeKutta::_stop_reason() {
@@ -71,14 +77,14 @@ std::string RungeKutta::_stop_reason() {
     if (_t >= _max_time) {
         reason = std::string("Reached max_time");
     }
-    if (step_number() >= _max_steps) {
+    if (_step_number() >= _max_steps) {
         reason = std::string("Reached max_step");
     }
     return reason;
 }
 
 bool RungeKutta::_print_this_step() {
-    return (step_number() % _print_frequency == 0);
+    return (_step_number() % _print_frequency == 0);
 }
 
 void RungeKutta::_write_solution() {
@@ -88,7 +94,7 @@ void RungeKutta::_write_solution() {
     // write contents of cpu buffer to file
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
-    for (unsigned i = 0; i < _phi_cpu->length(); i++){
+    for (unsigned i = 0; i < _phi_cpu->size(); i++){
         file << (*_phi_cpu)(i);
         file << "\n";
     }
@@ -99,14 +105,14 @@ void RungeKutta::_write_solution() {
 
 std::string RungeKutta::_print_progress() {
     std::string progress ("Step: ");
-    progress.append(std::to_string(step_number()));
+    progress.append(std::to_string(_step_number()));
     progress.append(", t = ");
     progress.append(std::to_string(_t));
     return progress;
 }
 
 bool RungeKutta::_plot_this_step() {
-    bool plot_step = _plot_every_n_steps > 0 && step_number() % _plot_every_n_steps == 0;
+    bool plot_step = _plot_every_n_steps > 0 && _step_number() % _plot_every_n_steps == 0;
     bool plot_time = _plot_frequency > 0 && _time_since_last_plot >= _plot_frequency;
     return (plot_step || plot_time);
 }
@@ -118,7 +124,7 @@ void RungeKutta::set_initial_condition() {
     unsigned i = 0;
     double *phi = _phi_cpu->data();
     while (getline(initial_condition, phi_ic)) {
-        if (i >= _phi_cpu->length()) {
+        if (i >= _phi_cpu->size()) {
             initial_condition.close();
             throw new std::runtime_error("Too many values in IC");
         }
@@ -126,7 +132,7 @@ void RungeKutta::set_initial_condition() {
         i++;
     }
     initial_condition.close();
-    if (i != _phi_cpu->length()){
+    if (i != _phi_cpu->size()){
         throw new std::runtime_error("Too few values in IC");
     }
 

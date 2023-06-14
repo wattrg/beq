@@ -20,6 +20,7 @@ public:
 
 
 private:
+    // configuration details
     int _n_stages;
     double _t;
     double _max_time;
@@ -30,11 +31,18 @@ private:
     double _time_since_last_plot;
     int _n_solutions = 1;
     double _cfl;
+
+    // Buttler tableau
+    std::vector<double> _c;
+    std::vector<double> _b;
+    std::vector<std::vector<double>> _a;
+
+    // memory buffers
     Field<double> *_phi_cpu;
     Field<double> *_residual;
     std::vector<Field<double>*> _phi_buffers;
 
-
+    // implementation
     void _take_step(Equation &equation, Domain &domain);
     bool _stop();
     std::string _stop_reason();

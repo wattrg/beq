@@ -13,10 +13,10 @@ public:
     void solve(Equation &equation, Domain &domain) {
         while (true) {
             _take_step(equation, domain);
-            _step_number++;
+            _step_num++;
 
             if (_print_this_step()) {
-                std::cout << _print_progress() << std::endl;
+                std::cout << "  " << _print_progress() << std::endl;
             }
 
             bool stop = _stop();
@@ -32,12 +32,12 @@ public:
         }
     }
 
-    int step_number() const { return _step_number; }
 
     virtual void set_initial_condition() = 0;
 
 
 protected:
+    int _step_number() const { return _step_num; }
     virtual void _take_step(Equation &equation, Domain &domain) = 0;
     virtual bool _stop() = 0;
     virtual std::string _stop_reason() = 0;
@@ -47,7 +47,7 @@ protected:
     virtual void _write_solution() = 0;
 
 private:
-    int _step_number = 0;
+    int _step_num = 0;
 };
 
 #endif

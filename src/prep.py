@@ -98,6 +98,17 @@ class Advection(_JsonData):
     def __init__(self):
         self.type = self._type
     
+class Burgers(_JsonData):
+    _json_values = [
+        "type",
+    ]
+
+    __slots__ = _json_values
+    _default = "burgers_eq.json"
+    _type = "burgers"
+
+    def __init__(self):
+        self.type = self._type
 
 def prep():
     prep_script = sys.argv[1]
@@ -107,6 +118,7 @@ def prep():
         "RungeKutta": RungeKutta,
         "Domain": Domain,
         "Advection": Advection,
+        "Burgers": Burgers,
     }
     with open(prep_script, "r") as f:
         exec(f.read(), namespace)
