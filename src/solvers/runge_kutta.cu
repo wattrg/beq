@@ -2,7 +2,7 @@
 #include "runge_kutta.h"
 
 RungeKutta::RungeKutta(json json_config, Domain &domain) 
-    : _t(0.0)
+    : _t(0.0), _time_since_last_plot(0.0)
 {
     // read configuration
     this->_cfl = json_config.at("cfl"); 

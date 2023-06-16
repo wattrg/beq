@@ -45,7 +45,7 @@ struct Field {
 
     T& operator() (unsigned i, unsigned comp) {
         assert(i < _length && comp < _components);
-        return _data[i*_length + comp];
+        return _data[_length * comp + i];
     }
 
     unsigned length () const { return _length; }
