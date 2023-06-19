@@ -59,7 +59,7 @@ int prep(std::string case_name) {
         std::cerr << "Make sure BEQ environment variable is set" << std::endl;
         return 1;
     }
-    std::string prep_name = std::string(beq) + "/bin/beq_prep";
+    std::string prep_name = std::string(beq) + "/lib/prep.py";
     std::string prep_command = "python " + prep_name + " " + case_name;
     std::system(prep_command.c_str());
 
@@ -91,7 +91,7 @@ int post(){
         std::cerr << "Make sure BEQ environment variable is set" << std::endl;
         return 1;
     }
-    std::string post_command = "python " + std::string(beq) + "/bin/beq_post";
+    std::string post_command = "python " + std::string(beq) + "/lib/post.py";
     std::system(post_command.c_str());
 
     return 0;

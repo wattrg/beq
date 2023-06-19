@@ -14,7 +14,7 @@ INCDIR     := include
 BUILDDIR   := build/obj
 TARGETDIR  := build/target
 INSTALLDIR := inst
-LIBINSTDIR := $(LIBINSTDIR)/lib
+LIBINSTDIR := $(INSTALLDIR)/lib
 LIBDIR     := build/lib
 RESOURCES  := resources
 RESDIR     := res
@@ -89,8 +89,8 @@ echo_version_flags:
 install: build $(TARGET) 
 	@mkdir -p $(INSTALLDIR)/bin
 	cp -r $(TARGETDIR)/* $(INSTALLDIR)/bin
-	cp -p $(SRCDIR)/prep.py $(INSTALLDIR)/bin/beq_prep
-	cp -p $(SRCDIR)/post.py $(INSTALLDIR)/bin/beq_post
+	cp $(SRCDIR)/prep.py $(INSTALLDIR)/lib/
+	cp $(SRCDIR)/post.py $(INSTALLDIR)/lib/
 	cp -r $(RESOURCES) $(INSTALLDIR)/resources
 	@echo Finished installation
 
@@ -108,6 +108,7 @@ directories:
 	@mkdir -p $(BUILDDIR)/solvers
 	@mkdir -p $(BUILDDIR)/equations
 	@mkdir -p $(LIBDIR)
+	@mkdir -p $(LIBINSTDIR)
 
 #Clean only Objecst
 clean:
