@@ -14,6 +14,7 @@ public:
     json domain_json();
     json equation_json();
     json solver_json();
+    std::string title() {return _title;}
 
 private:
     std::string _title;

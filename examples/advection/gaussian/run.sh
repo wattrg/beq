@@ -1,4 +1,4 @@
 rm -rf config solution
-beq_prep gaussian.py
-beq_debug
-beq_post
+beq_debug prep gaussian.py
+beq_debug run
+beq_debug post

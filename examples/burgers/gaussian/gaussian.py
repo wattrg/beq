@@ -3,7 +3,7 @@ import math
 n = 1000
 L = 10
 dx = L / n
-flow_time = 2 * L / 1
+flow_time = 1.5 * L / 1
 sigma = 0.2
 x0 = L / 3
 

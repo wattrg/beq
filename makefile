@@ -25,7 +25,7 @@ OBJEXT     := o
 #Flags, Libraries and Includes
 CFLAGS      := -Wextra -Wall -fPIC -fopenmp -std=c++17
 LIB         := -lm
-INC         := -I$(INCDIR) -I/usr/local/include 
+INC         := -I$(INCDIR) -I/usr/local/include -I/usr/include/python3.9 -lpython3.9
 INCDEP      := -I$(INCDIR)
 
 
@@ -128,7 +128,7 @@ $(TARGET): $(OBJECTS)
 #Compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) -c -o $@ $< 
-	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
