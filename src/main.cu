@@ -31,7 +31,6 @@ void print_header() {
     std::cout << "Git branch: " << STRINGIFY(GIT_BRANCH) << std::endl;
     std::cout << "Git commit: " << STRINGIFY(GIT_HASH) << std::endl;
     std::cout << "Build date: " << STRINGIFY(COMPILE_TIME) << std::endl;
-    std::cout << std::endl;
 }
 
 void read_initial_condition(double *phi, int n) {
@@ -53,7 +52,6 @@ void read_initial_condition(double *phi, int n) {
 }
 
 int prep(std::string case_name) {
-    std::cout << "Preparing " << case_name << std::endl;
     const char* beq = std::getenv("BEQ");
     if (!beq) {
         std::cerr << "Make sure BEQ environment variable is set" << std::endl;
@@ -69,11 +67,10 @@ int prep(std::string case_name) {
 int run() {
     // unpack some config data
     Config config = Config("config/config.json");
-    std::cout << "Running " << config.title() << std::endl;
 
     Domain domain(config.domain_json());
     Equation * equation = create_equation(config.equation_json());
-    Solver * solver = make_solver(config.solver_json(), domain);
+    Solver * solver = make_solver(config.solver_json(), domain, equation);
 
     solver->set_initial_condition();
     solver->solve(*equation, domain);  
@@ -85,7 +82,6 @@ int run() {
 }
 
 int post(){
-    std::cout << "Post Processing" << std::endl;
     const char* beq = std::getenv("BEQ");
     if (!beq) {
         std::cerr << "Make sure BEQ environment variable is set" << std::endl;
@@ -124,18 +120,23 @@ int main(int argc, char* argv[]) {
     }
 
     Command command = string_to_command(std::string(argv[1]));
+    int flag = 0;
     switch (command) {
         case Command::Help:
             std::cout << LONG_HELP << std::endl;
             break;
         case Command::Prep:
-            return prep(std::string(argv[2]));
+            std::cout << "Action: prepping " << std::string(argv[2]) << std::endl;
+            flag = prep(std::string(argv[2]));
             break;
         case Command::Run:
-            return run();
+            std::cout << "Action: running simulation" << std::endl;
+            flag = run();
             break;
         case Command::Post:
-            return post();
+            std::cout << "Actin: post processing" << std::endl;
+            flag = post();
             break;
     }
+    return flag;
 }

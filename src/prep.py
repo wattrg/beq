@@ -4,14 +4,75 @@ import json
 import os
 import sys
 
+from enum import Enum
+import numpy as np
+
+kB = 1.380649e-23
+
+def maxwellian_distribution(flow_state, vel, gas, dv, n_vel_increments):
+    """
+    Compute the maxwellian velocity distribution for a given flow state
+
+    Parameters
+    ----------
+    flow_state: FlowState
+        The macroscopic flow quantities
+    vel: float
+        The velocity to evaluate the distribution function at
+    mass: float
+        The mass of a single gas particle
+    dv: float
+        The velocity increment
+    n_vel_increments: int
+        The number of velocity increments
+
+    Returns
+    -------
+    list<float>
+        The distribution function
+    """
+    mass = gas.mass
+    mass_on_two_pi_kB_T = mass / (2 * np.pi * kB * flow_state.T)
+    exponent = -mass_on_two_pi_kB_T * (vel - flow_state.v)**2
+    return mass_on_two_pi_kB_T**(3.2) * np.exp(exponent)
+
+class FlowState:
+    __slots__ = ["rho", "T", "v"]
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+
+class GasModel:
+    ___slots__ = ["mass"]
+
+    def __init__(self, species=None, **kwargs):
+        if species:
+            self._load_species(species)
+
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+
+    def _load_species(self, species):
+        beq = os.environ["BEQ"]
+        with open(f"{beq}/resources/species/{species}.json", "r") as species_data:
+            data = json.load(species_data)
+
+        for key, value in data.items():
+            self.__setattr__(key, value)
+
+
 class _JsonData:
-    def __init__(self):
+    def __init__(self, **kwargs):
         beq = os.environ["BEQ"]
         with open(f"{beq}/resources/defaults/{self._default}", "r") as default_json:
             defaults = json.load(default_json)
 
         for key in self._json_values:
-            setattr(self, key, defaults[key])
+            self.__setattr__(key, defaults[key])
+
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
 
     def to_dict(self):
         json_values = {}
@@ -29,6 +90,7 @@ class _Config(_JsonData):
         "initial_condition",
         "solver",
         "domain",
+        "gas_model",
     ]
 
     __slots__ = _json_values + _python_values
@@ -45,15 +107,40 @@ class _Config(_JsonData):
         with open("config/config.json", "w") as file:
             json.dump(json_values, file, indent=4)
 
-    def _write_initial_condition(self):
-        if not os.path.exists("solution"):
-            os.mkdir("solution")
+    def _write_direct_initial_condition(self):
         dx = self.domain.length / self.domain.number_cells
         with open("solution/phi_0.beq", "w") as ic:
             for i in range(self.domain.number_cells):
                 x = (i + 0.5) * dx
                 value = self.initial_condition(x)
                 ic.write(f"{value}\n")
+
+    def _write_equilibrium_initial_condition(self):
+        dx = self.domain.length / self.domain.number_cells
+        dv = self.equation.dv
+        n_vel_inc = self.equation.n_vel_increments
+        max_v = (n_vel_inc + 0.5) * dv
+        vels = np.arange(0.5*dv, max_v, dv)
+        vels = np.append(vels, -vels)
+        with open("solution/phi_0.beq", "w") as ic:
+            for vel in vels:
+                for i in range(self.domain.number_cells):
+                    x = (i + 0.5) * dx
+                    flow_state = self.initial_condition(x)
+                    dist = maxwellian_distribution(
+                        flow_state, vel, self.gas_model, self.equation.dv, self.equation.n_vel_increments
+                    )
+                    ic.write(f"{dist}\n")
+
+    def _write_initial_condition(self):
+        if not os.path.exists("solution"):
+            os.mkdir("solution")
+
+        if self.equation.ic_type == ICType.EQUILIBRIUM:
+            self._write_equilibrium_initial_condition()
+
+        elif self.equation.ic_type == ICType.DIRECT:
+            self._write_direct_initial_condition()
 
     def write(self):
         self._write_json_config()
@@ -78,6 +165,11 @@ class RungeKutta(_JsonData):
         super().__init__()
         self.type = self._type
 
+class ICType(Enum):
+    DIRECT = 1
+    EQUILIBRIUM = 2
+
+
 class Domain(_JsonData):
     _json_values = [
         "number_cells",
@@ -85,6 +177,7 @@ class Domain(_JsonData):
     ]
     __slots__ = _json_values
     _default = "domain.json"
+
 
 class Advection(_JsonData):
     _json_values = [
@@ -94,9 +187,11 @@ class Advection(_JsonData):
     __slots__ = _json_values
     _default = "advection_eq.json"
     _type = "advection"
+    ic_type = ICType.DIRECT
 
     def __init__(self):
         self.type = self._type
+        super().__init__()
     
 class Burgers(_JsonData):
     _json_values = [
@@ -106,9 +201,26 @@ class Burgers(_JsonData):
     __slots__ = _json_values
     _default = "burgers_eq.json"
     _type = "burgers"
+    ic_type = ICType.DIRECT
 
     def __init__(self):
         self.type = self._type
+        super().__init__()
+
+class Boltzmann(_JsonData):
+    _json_values = [
+        "type",
+        "dv",
+        "n_vel_increments",
+    ]
+    __slots__ = _json_values
+    _default = "boltzmann_eq.json"
+    _type = "boltzmann"
+    ic_type = ICType.EQUILIBRIUM
+
+    def __init__(self):
+        self.type = self._type
+        super().__init__()
 
 def prep():
     prep_script = sys.argv[1]
@@ -119,6 +231,9 @@ def prep():
         "Domain": Domain,
         "Advection": Advection,
         "Burgers": Burgers,
+        "Boltzmann": Boltzmann,
+        "FlowState": FlowState,
+        "GasModel": GasModel,
     }
     with open(prep_script, "r") as f:
         exec(f.read(), namespace)

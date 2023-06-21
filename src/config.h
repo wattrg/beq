@@ -4,6 +4,7 @@
 #include <string>
 #include <json.hpp>
 #include "solvers/solver.h"
+#include "equations/equation.h"
 #include "domain.h"
 
 using json = nlohmann::json;
@@ -21,6 +22,5 @@ private:
     json _json_data;
 };
 
-Solver * make_solver(json solver_json, Domain &domain);
 
 #endif

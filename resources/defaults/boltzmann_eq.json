@@ -1,0 +1,5 @@
+{
+    "type": "boltzmann",
+    "dv": 1,
+    "n_vel_increments": 10
+}

@@ -48,6 +48,10 @@ struct Field {
         return _data[_length * comp + i];
     }
 
+    T& flat_index(unsigned i) {
+        return _data[i];
+    }
+
     unsigned length () const { return _length; }
     unsigned number_components () const { return _components; }
     unsigned size() const { return _components * _length; }

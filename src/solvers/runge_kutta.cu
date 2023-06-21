@@ -1,7 +1,7 @@
 #include <fstream>
 #include "runge_kutta.h"
 
-RungeKutta::RungeKutta(json json_config, Domain &domain) 
+RungeKutta::RungeKutta(json json_config, Domain &domain, Equation *equation) 
     : _t(0.0), _time_since_last_plot(0.0)
 {
     // read configuration
@@ -14,11 +14,12 @@ RungeKutta::RungeKutta(json json_config, Domain &domain)
     this->_plot_frequency = json_config.at("plot_frequency");
 
     // allocate memory
+    int n_comp = equation->number_components();
     unsigned n = domain.number_cells();
-    this->_phi_cpu = new Field<double>(n, false); // allocated on CPU
-    this->_residual = new Field<double>(n, true); // allocated on GPU
+    this->_phi_cpu = new Field<double>(n, n_comp, false); // allocated on CPU
+    this->_residual = new Field<double>(n, n_comp, true); // allocated on GPU
     for (int stage = 0; stage < _n_stages; stage++) {
-        Field<double> * field = new Field<double>(n, true);
+        Field<double> * field = new Field<double>(n, n_comp, true);
         this->_phi_buffers.push_back(field);
     }
 }
@@ -95,7 +96,7 @@ void RungeKutta::_write_solution() {
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
     for (unsigned i = 0; i < _phi_cpu->size(); i++){
-        file << (*_phi_cpu)(i);
+        file << (*_phi_cpu).flat_index(i);
         file << "\n";
     }
     file.close();

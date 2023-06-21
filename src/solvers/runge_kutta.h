@@ -13,7 +13,7 @@ using json = nlohmann::json;
 
 class RungeKutta : public Solver {
 public:
-    RungeKutta (json solver_config, Domain &domain);
+    RungeKutta (json solver_config, Domain &domain, Equation *equation);
     ~RungeKutta();
 
     void set_initial_condition();

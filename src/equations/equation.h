@@ -12,7 +12,7 @@ public:
     virtual ~Equation() {}
     virtual void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain) = 0;
     virtual double allowable_dt(Field<double> &phi, Domain &domain) = 0;
-        
+    virtual int number_components() = 0;        
 };
 
 class Advection : public Equation {
@@ -31,6 +31,8 @@ public:
         return domain.dx() / _velocity; 
     }
 
+    int number_components() {return 1;}
+
 private:
     double _velocity;
 };
@@ -44,9 +46,33 @@ public:
 
     double allowable_dt(Field<double> &phi, Domain &domain);
 
+    int number_components() {return 1;}
+
 private:
     int *_min_dt_gpu;
     int _min_dt_cpu;
+};
+
+class Boltzmann : public Equation {
+public:
+    Boltzmann(json json_data);
+    ~Boltzmann(){}
+
+    void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain);
+
+    double allowable_dt(Field<double> &phi, Domain &domain);
+
+    int number_components() {
+        // _n_velocity_increments is the number of increments in the positive
+        // velocities. We also need to track the negative velocities, so
+        // we need twice the number of components in data field.
+        return 2 * _n_velocity_increments;
+    }
+
+private:
+    double _dv;
+    double _max_v;
+    int _n_velocity_increments;
 };
 
 Equation * create_equation(json json_data);

@@ -50,4 +50,6 @@ private:
     int _step_num = 0;
 };
 
+Solver * make_solver(json solver_json, Domain &domain, Equation *equation);
+
 #endif

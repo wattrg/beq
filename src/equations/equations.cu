@@ -9,6 +9,9 @@ Equation * create_equation(json json_data){
     else if (type == "burgers") {
         eq = new Burgers();
     }
+    else if (type == "boltzmann") {
+        eq = new Boltzmann(json_data);
+    }
     else {
         throw new std::runtime_error("Unknwon equation type");
     }
