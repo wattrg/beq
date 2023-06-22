@@ -28,6 +28,7 @@ const char *LONG_HELP =
     "\n"
     "Available commands:\n"
     "    - help: print this help message\n"
+    "    - check: check the environment is set up correctly\n"
     "    - prep <CASE>: prepare a case\n"
     "    - run: run a case\n"
     "    - post: post process a case\n";
@@ -56,6 +57,16 @@ void read_initial_condition(double *phi, int n) {
     if (i != n){
         throw new std::runtime_error("Too few values in IC");
     }
+}
+
+int check() {
+    const char* beq = std::getenv("BEQ");
+    if (!beq) {
+        std::cerr << "Error: BEQ environment variable is not set" << std::endl;
+        return 1;
+    }
+
+    return 0;
 }
 
 int prep(std::string case_name) {
@@ -100,11 +111,14 @@ int post(){
     return flag;
 }
 
-enum class Command {Help, Prep, Run, Post};
+enum class Command {Help, Check, Prep, Run, Post};
 
 Command string_to_command(std::string command_string){
     if (command_string == "help") {
         return Command::Help;
+    }
+    if (command_string == "check") {
+        return Command::Check;
     }
     if (command_string == "prep") {
         return Command::Prep;
@@ -133,6 +147,12 @@ int main(int argc, char* argv[]) {
         case Command::Help:
             std::cout << std::endl;
             std::cout << LONG_HELP << std::endl;
+            break;
+        case Command::Check:
+            flag = check();
+            if (flag == 0){
+                std::cout << "Environment set up correctly" << std::endl;
+            }
             break;
         case Command::Prep:
             std::cout << "Action: prepping " << std::string(argv[2]) << std::endl;
