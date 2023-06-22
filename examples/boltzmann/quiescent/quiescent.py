@@ -6,7 +6,7 @@ flow_time = L / v
 n = 100
 
 def initial_condition(x):
-    return FlowState(T = 300, v = 1)
+    return FlowState(T = 300, v = 5)
 
 
 config.domain = Domain()

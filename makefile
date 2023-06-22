@@ -2,7 +2,7 @@
 #Compiler and Linker
 NVCC        := nvcc
 CC          := g++
-flavour     ?= debug
+debug       ?= 0
 GPU         ?= 1
 
 #The Target Binary Program
@@ -30,7 +30,7 @@ INCDEP      := -I$(INCDIR)
 
 
 # optimisation
-ifeq ($(flavour), debug)
+ifeq ($(debug), 1)
 	TARGET = beq_debug
 	CFLAGS := $(CFLAGS) -g
 else 
@@ -46,12 +46,6 @@ ifeq ($(profile), 1)
 endif
 
 
-# clang needs some extra flags to make openmp work
-ifeq ($(CC), clang++)
-	CFLAGS "= $(CFLAGS) -fopenmp=libomp
-endif
-
-
 GIT_HASH := $(shell git describe --always --dirty)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMPILE_TIME := $(shell date +'%Y-%m-%d %H:%M:%S AEST')
@@ -62,6 +56,7 @@ OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJE
 # LIBSOURCES  := $(shell find $(SRCDIR)/python_api -type f -name *.$(SRCEXT))
 # PYBIND11    := $(shell python -m pybind11 --includes)
 
+CUDA_FLAGS := -ccbin $(CC)
 CUDA_CFLAGS := $(foreach option, $(CFLAGS), --compiler-options $(option))
 CUDA_VERSION_FLAGS:= --compiler-options -DGIT_HASH="\"$(GIT_HASH)\"" --compiler-options -DCOMPILE_TIME="\"$(COMPILE_TIME)\"" --compiler-options -DGIT_BRANCH="\"$(GIT_BRANCH)\""
 # CFLAGS := $(CUDA_CFLAGS)
@@ -124,12 +119,12 @@ cleaner:
 
 #Link
 $(TARGET): $(OBJECTS)
-	$(NVCC) $(CUDA_CFLAGS) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
+	$(NVCC) $(CUDA_FLAGS) $(CUDA_CFLAGS) -o $(TARGETDIR)/$(TARGET) $^ $(LIB)
 
 #Compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
-	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) -c -o $@ $< 
-	$(NVCC) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
+	$(NVCC) $(CUDA_FLAGS) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) -c -o $@ $< 
+	$(NVCC) $(CUDA_FLAGS) $(CUDA_CFLAGS) $(CUDA_VERSION_FLAGS) $(INC) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)

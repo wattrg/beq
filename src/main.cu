@@ -16,8 +16,14 @@
 #define _STRINGIFY(x) #x
 #define STRINGIFY(x) _STRINGIFY(x)
 
+#ifdef NDEBUG
+#define DEBUG off
+#else
+#define DEBUG on
+#endif
+
 const char *LONG_HELP = 
-    "USAGE: "
+    "USAGE:\n"
     "    beq command [options]\n"
     "\n"
     "Available commands:\n"
@@ -31,6 +37,7 @@ void print_header() {
     std::cout << "Git branch: " << STRINGIFY(GIT_BRANCH) << std::endl;
     std::cout << "Git commit: " << STRINGIFY(GIT_HASH) << std::endl;
     std::cout << "Build date: " << STRINGIFY(COMPILE_TIME) << std::endl;
+    std::cout << "Debugging: " << STRINGIFY(DEBUG) << std::endl;
 }
 
 void read_initial_condition(double *phi, int n) {
@@ -59,9 +66,9 @@ int prep(std::string case_name) {
     }
     std::string prep_name = std::string(beq) + "/lib/prep.py";
     std::string prep_command = "python " + prep_name + " " + case_name;
-    std::system(prep_command.c_str());
+    int flag = std::system(prep_command.c_str());
 
-    return 0;
+    return flag;
 }
 
 int run() {
@@ -88,9 +95,9 @@ int post(){
         return 1;
     }
     std::string post_command = "python " + std::string(beq) + "/lib/post.py";
-    std::system(post_command.c_str());
+    int flag = std::system(post_command.c_str());
 
-    return 0;
+    return flag;
 }
 
 enum class Command {Help, Prep, Run, Post};
@@ -115,6 +122,7 @@ int main(int argc, char* argv[]) {
     print_header();
 
     if (argc < 2){
+        std::cout << std::endl;
         std::cout << LONG_HELP << std::endl;
         return 0;
     }
@@ -123,6 +131,7 @@ int main(int argc, char* argv[]) {
     int flag = 0;
     switch (command) {
         case Command::Help:
+            std::cout << std::endl;
             std::cout << LONG_HELP << std::endl;
             break;
         case Command::Prep:
@@ -134,7 +143,7 @@ int main(int argc, char* argv[]) {
             flag = run();
             break;
         case Command::Post:
-            std::cout << "Actin: post processing" << std::endl;
+            std::cout << "Action: post processing" << std::endl;
             flag = post();
             break;
     }
