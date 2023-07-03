@@ -99,13 +99,17 @@ int run() {
     return 0;
 }
 
-int post(){
+int post(int argc, char* argv[]){
     const char* beq = std::getenv("BEQ");
     if (!beq) {
         std::cerr << "Make sure BEQ environment variable is set" << std::endl;
         return 1;
     }
     std::string post_command = "python " + std::string(beq) + "/lib/post.py";
+    for (int i = 2; i < argc; i++){
+        post_command.append(" ");
+        post_command.append(argv[i]);
+    }
     int flag = std::system(post_command.c_str());
 
     return flag;
@@ -164,7 +168,7 @@ int main(int argc, char* argv[]) {
             break;
         case Command::Post:
             std::cout << "Action: post processing" << std::endl;
-            flag = post();
+            flag = post(argc, argv);
             break;
     }
     return flag;

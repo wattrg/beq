@@ -44,7 +44,8 @@ class FlowState:
             self.__setattr__(key, value)
 
 class GasModel:
-    ___slots__ = ["mass"]
+    _values = ["mass"]
+    __slots__ = _values
 
     def __init__(self, species=None, **kwargs):
         if species:
@@ -60,6 +61,12 @@ class GasModel:
 
         for key, value in data.items():
             self.__setattr__(key, value)
+
+    def to_dict(self):
+        json_values = {}
+        for value in self._values:
+            json_values[value] = getattr(self, value)
+        return json_values
 
 
 class _JsonData:
@@ -81,7 +88,7 @@ class _JsonData:
         return json_values
 
 
-class _Config(_JsonData):
+class Config(_JsonData):
     _json_values = [
         "title"
     ]
@@ -100,10 +107,14 @@ class _Config(_JsonData):
     def _write_json_config(self):
         if not os.path.exists("config"):
             os.mkdir("config")
+
         json_values = self.to_dict()
         json_values["solver"] = self.solver.to_dict()
         json_values["domain"] = self.domain.to_dict()
         json_values["equation"] = self.equation.to_dict()
+        if hasattr(self, "gas_model"):
+            json_values["gas_model"] = self.gas_model.to_dict()
+
         with open("config/config.json", "w") as file:
             json.dump(json_values, file, indent=4)
 
@@ -224,7 +235,7 @@ class Boltzmann(_JsonData):
 
 def prep():
     prep_script = sys.argv[1]
-    config = _Config()
+    config = Config()
     namespace = {
         "config": config,
         "RungeKutta": RungeKutta,
