@@ -115,7 +115,7 @@ int post(int argc, char* argv[]){
     return flag;
 }
 
-enum class Command {Help, Check, Prep, Run, Post};
+enum class Command {Help, Check, Prep, Run, Post, Clean};
 
 Command string_to_command(std::string command_string){
     if (command_string == "help") {
@@ -132,6 +132,9 @@ Command string_to_command(std::string command_string){
     }
     if (command_string == "post") {
         return Command::Post;
+    }
+    if (command_string == "clean") {
+        return Command::Clean;
     }
     throw std::runtime_error("Unknown command");
 }
@@ -170,6 +173,10 @@ int main(int argc, char* argv[]) {
             std::cout << "Action: post processing" << std::endl;
             flag = post(argc, argv);
             break;
+        case Command::Clean:
+            std::filesystem::remove_all("config");
+            std::filesystem::remove_all("plot");
+            std::filesystem::remove_all("solution");
     }
     return flag;
 }
