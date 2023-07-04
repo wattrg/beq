@@ -65,7 +65,6 @@ def phi_to_macroscopic(config):
     length = config.domain.length
     nc = config.domain.number_cells
     nv = config.equation.n_vel_increments * 2
-    volume = length / nc
     mass = config.gas_model.mass
     molar_mass = mass * NA
 
@@ -97,13 +96,13 @@ def phi_to_macroscopic(config):
         for cell_i in range(nc):
             phi = phis[cell_i]
             # moments of the distribution function
-            density[cell_i] = mass * moment_of_distibution(config, phi, 0) / volume
-            momentum[cell_i] = mass * moment_of_distibution(config, phi, 1) / volume
-            energy[cell_i] = mass * moment_of_distibution(config, phi, 2) / (2 * volume)
+            density[cell_i] = mass * moment_of_distibution(config, phi, 0)
+            momentum[cell_i] = mass * moment_of_distibution(config, phi, 1)
+            energy[cell_i] = mass * moment_of_distibution(config, phi, 2) / 2
 
             # derived quantities
             temperature[cell_i] = energy[cell_i] / Cv            
-            velocity[cell_i] = momentum[cell_i] / mass * volume
+            velocity[cell_i] = momentum[cell_i] / mass
             pressure = density[cell_i] * R * temperature[cell_i]
 
 

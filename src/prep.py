@@ -34,7 +34,8 @@ def maxwellian_distribution(flow_state, vel, gas, dv, n_vel_increments):
     mass = gas.mass
     mass_on_two_pi_kB_T = mass / (2 * np.pi * kB * flow_state.T)
     exponent = -mass_on_two_pi_kB_T * (vel - flow_state.v)**2
-    return mass_on_two_pi_kB_T**(3.2) * np.exp(exponent)
+    number_density = flow_state.rho / gas.mass
+    return number_density * mass_on_two_pi_kB_T**(3.2) * np.exp(exponent)
 
 class FlowState:
     __slots__ = ["rho", "T", "v"]
@@ -42,6 +43,7 @@ class FlowState:
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             self.__setattr__(key, value)
+
 
 class GasModel:
     _values = ["mass"]

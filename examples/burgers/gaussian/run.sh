@@ -1,4 +1,4 @@
-rm -rf config solution
-beq_debug prep gaussian.py
-beq_debug run
-beq_debug post
+beq clean
+beq prep gaussian.py
+beq run
+beq post animate_direct
