@@ -114,8 +114,8 @@ class Config(_JsonData):
         # start by filling out defaults
         super().__init__(**kwargs)
         
-        # overwrite values with values from the config dictionary
-        if config is not None:
+        # overwrite values with values from the config dictionary, if provided
+        if config:
             for key, value in config.items():
                 if key == "solver":
                     self.solver = make_solver(value)

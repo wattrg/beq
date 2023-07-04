@@ -145,12 +145,12 @@ def moment_of_distibution(config, phi, order):
     return total
 
 def plot_macroscopic(var, repeat=False):
-    files = glob.glob("plot/{var}/*.beq")
-    number_solutions = len(files)
+    folders = next(os.walk("plot"))[1]
+    number_solutions = len(folders)
 
     data = []
     for i in range(number_solutions):
-        data.append(np.loadtxt(f"plot/{var}/{i}.beq"))
+        data.append(np.loadtxt(f"plot/{i}/{var[0]}.beq"))
 
     animate(data, repeat, 20)
     
