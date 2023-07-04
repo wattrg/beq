@@ -110,18 +110,23 @@ class Config(_JsonData):
 
     _default = "config.json"
 
-    def __init__(self, config):
-        for key, value in config.items():
-            if key == "solver":
-                self.solver = make_solver(value)
-            elif key == "domain":
-                self.domain = Domain(**value)
-            elif key == "gas_model":
-                self.gas_model = GasModel(**value)
-            elif key == "equation":
-                self.equation = make_equation(value)
-            else:
-                self.__setattr__(key, value)
+    def __init__(self, config=None, **kwargs):
+        # start by filling out defaults
+        super().__init__(**kwargs)
+        
+        # overwrite values with values from the config dictionary
+        if config is not None:
+            for key, value in config.items():
+                if key == "solver":
+                    self.solver = make_solver(value)
+                elif key == "domain":
+                    self.domain = Domain(**value)
+                elif key == "gas_model":
+                    self.gas_model = GasModel(**value)
+                elif key == "equation":
+                    self.equation = make_equation(value)
+                else:
+                    self.__setattr__(key, value)
 
     def _write_json_config(self):
         if not os.path.exists("config"):
