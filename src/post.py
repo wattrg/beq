@@ -41,11 +41,18 @@ def main():
     elif action == Action.ANIMATE_MACROSCOPIC:
         variables = sys.argv[2:]
         plot_macroscopic(variables)
+    elif action == Action.ANIMATE_DISTRIBUTION:
+        with open("config/config.json", "r") as config_file:
+            config = json.load(config_file)
+        config = Config(config)
+        cell_i = int(sys.argv[2])
+        animate_distribution(config, cell_i)
 
 class Action(Enum):
     ANIMATE_DIRECT = 1
     PHI_TO_MACROSCOPIC = 2
     ANIMATE_MACROSCOPIC = 3
+    ANIMATE_DISTRIBUTION = 4
 
 def get_action(action_string):
     if action_string == "animate_direct":
@@ -54,8 +61,27 @@ def get_action(action_string):
         return Action.PHI_TO_MACROSCOPIC
     elif action_string == "animate_macroscopic":
         return Action.ANIMATE_MACROSCOPIC
+    elif action_string == "animate_distribution":
+        return Action.ANIMATE_DISTRIBUTION
     else:
-        return Action.ANIMATE_MACROSCOPIC
+        return Action.ANIMATE_DIRECT
+
+def animate_distribution(config, cell_i, interval=20, repeat=False):
+    data = read_phi()
+    nc = config.domain.number_cells
+    nv = config.equation.n_vel_increments * 2
+    dv = config.equation.dv
+    n_vel_inc = config.equation.n_vel_increments
+    max_v = (n_vel_inc + 0.5) * dv
+    vels = np.arange(0.5*dv, max_v, dv)
+    vels = np.append(vels, -vels)
+
+    distributions = []
+    for time_i in range(len(data)):
+        phis = data[time_i].reshape((nc, nv))
+        distributions.append(phis[cell_i, :])
+    
+    animate(distributions, repeat, interval, vels)
 
 def phi_to_macroscopic(config):
     """
@@ -64,6 +90,7 @@ def phi_to_macroscopic(config):
     data = read_phi()
     length = config.domain.length
     nc = config.domain.number_cells
+    dx = length / nc
     nv = config.equation.n_vel_increments * 2
     mass = config.gas_model.mass
     molar_mass = mass * NA
@@ -96,9 +123,9 @@ def phi_to_macroscopic(config):
         for cell_i in range(nc):
             phi = phis[cell_i]
             # moments of the distribution function
-            density[cell_i] = mass * moment_of_distibution(config, phi, 0)
-            momentum[cell_i] = mass * moment_of_distibution(config, phi, 1)
-            energy[cell_i] = mass * moment_of_distibution(config, phi, 2) / 2
+            density[cell_i] = mass * moment_of_distibution(config, phi, 0) / dx
+            momentum[cell_i] = mass * moment_of_distibution(config, phi, 1) / dx
+            energy[cell_i] = mass * moment_of_distibution(config, phi, 2) / 2 / dx
 
             # derived quantities
             temperature[cell_i] = energy[cell_i] / Cv            
@@ -169,15 +196,18 @@ def direct_animation(repeat=False):
     data = read_phi()
     animate(data, repeat, 20)
     
-def animate(data, repeat, interval):
+def animate(data, repeat, interval, x_data=None):
     fig, ax = plt.subplots()
     initial_data = data[0]
-    line, = ax.plot(initial_data)
+
+    if x_data is None:
+        x_data = np.arange(0, len(initial_data), 1)
+
+    line, = ax.plot(x_data, initial_data)
 
     def init():
         return line,
-
-    x_data = np.arange(0, len(initial_data), 1)
+    
     def animate(i):
         line.set_data(x_data, data[i])
         return line,

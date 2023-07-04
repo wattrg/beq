@@ -9,7 +9,7 @@ import numpy as np
 
 kB = 1.380649e-23
 
-def maxwellian_distribution(flow_state, vel, gas, dv, n_vel_increments):
+def maxwellian_distribution(flow_state, vel, gas, volume):
     """
     Compute the maxwellian velocity distribution for a given flow state
 
@@ -21,10 +21,6 @@ def maxwellian_distribution(flow_state, vel, gas, dv, n_vel_increments):
         The velocity to evaluate the distribution function at
     mass: float
         The mass of a single gas particle
-    dv: float
-        The velocity increment
-    n_vel_increments: int
-        The number of velocity increments
 
     Returns
     -------
@@ -32,10 +28,11 @@ def maxwellian_distribution(flow_state, vel, gas, dv, n_vel_increments):
         The distribution function
     """
     mass = gas.mass
-    mass_on_two_pi_kB_T = mass / (2 * np.pi * kB * flow_state.T)
-    exponent = -mass_on_two_pi_kB_T * (vel - flow_state.v)**2
-    number_density = flow_state.rho / gas.mass
-    return number_density * mass_on_two_pi_kB_T**(3.2) * np.exp(exponent)
+    T = flow_state.T
+    mass_on_two_pi_kB_T = mass/(2*np.pi*kB*T)
+    exponent = -mass/(2*kB*T)*(vel - flow_state.v)**2
+    number_particles = flow_state.rho / mass * volume
+    return number_particles * mass_on_two_pi_kB_T**(3./2.) * np.exp(exponent)
 
 class FlowState:
     __slots__ = ["rho", "T", "v"]
@@ -165,7 +162,7 @@ class Config(_JsonData):
                     x = (i + 0.5) * dx
                     flow_state = self.initial_condition(x)
                     dist = maxwellian_distribution(
-                        flow_state, vel, self.gas_model, self.equation.dv, self.equation.n_vel_increments
+                        flow_state, vel, self.gas_model, dx
                     )
                     ic.write(f"{dist}\n")
 

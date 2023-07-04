@@ -1,5 +1,6 @@
 build/
 inst/
+**__pycache__
 examples/**/solution
 examples/**/config
 examples/**/plot
