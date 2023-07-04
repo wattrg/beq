@@ -2,3 +2,4 @@ build/
 inst/
 examples/**/solution
 examples/**/config
+examples/**/plot

@@ -1,11 +1,13 @@
 #! /usr/bin/python3
 
 from enum import Enum
+import os
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 import glob
 import sys
+import json
 
 from prep import Config
 
@@ -32,7 +34,10 @@ def main():
         repeat = "--repeat" in sys.argv
         direct_animation(repeat)
     elif action == Action.PHI_TO_MACROSCOPIC:
-        phi_to_macroscopic()
+        with open("config/config.json", "r") as config_file:
+            config = json.load(config_file)
+        config = Config(config)
+        phi_to_macroscopic(config)
     elif action == Action.ANIMATE_MACROSCOPIC:
         variables = sys.argv[2:]
         plot_macroscopic(variables)
@@ -75,6 +80,18 @@ def phi_to_macroscopic(config):
     pressure = np.zeros(nc)
     velocity = np.zeros(nc)
 
+    variables = {
+        "density": density,
+        "momentum": momentum,
+        "energy": energy,
+        "temperature": temperature,
+        "pressure": pressure,
+        "velocity": velocity
+    }
+    if not os.path.exists("plot"):
+        os.mkdir("plot")
+
+
     for time_i in range(len(data)):
         phis = data[time_i].reshape((nc, nv))
         for cell_i in range(nc):
@@ -86,9 +103,16 @@ def phi_to_macroscopic(config):
 
             # derived quantities
             temperature[cell_i] = energy[cell_i] / Cv            
-            velocity[cell_i] = moment[cell_i] / mass * volume
+            velocity[cell_i] = momentum[cell_i] / mass * volume
             pressure = density[cell_i] * R * temperature[cell_i]
 
+
+        if not os.path.exists(f"plot/{time_i}"):
+            os.mkdir(f"plot/{time_i}")
+
+        for var in variables:
+            with open(f"plot/{time_i}/{var}.beq", "w") as f:
+                np.savetxt(f, variables[var])
 
 
 def moment_of_distibution(config, phi, order):

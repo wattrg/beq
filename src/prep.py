@@ -87,6 +87,11 @@ class _JsonData:
             json_values[value] = getattr(self, value)
         return json_values
 
+    def set_values(self, dict):
+        for key, value in dict.items():
+            self.__setattr__(key, value)
+
+
 
 class Config(_JsonData):
     _json_values = [
@@ -97,12 +102,26 @@ class Config(_JsonData):
         "initial_condition",
         "solver",
         "domain",
+        "equation",
         "gas_model",
     ]
 
     __slots__ = _json_values + _python_values
 
     _default = "config.json"
+
+    def __init__(self, config):
+        for key, value in config.items():
+            if key == "solver":
+                self.solver = make_solver(value)
+            elif key == "domain":
+                self.domain = Domain(**value)
+            elif key == "gas_model":
+                self.gas_model = GasModel(**value)
+            elif key == "equation":
+                self.equation = make_equation(value)
+            else:
+                self.__setattr__(key, value)
 
     def _write_json_config(self):
         if not os.path.exists("config"):
@@ -172,9 +191,28 @@ class RungeKutta(_JsonData):
     _default = "runge_kutta.json"
     _type = "runge_kutta"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.type = self._type
+
+def make_solver(solver_config):
+    """
+    Make a solver from a dictionary representation of the json config
+
+    Parameters
+    ----------
+    solver_config: dict
+        The dictionary representation of the json config
+
+    Returns
+    -------
+    Solver: A solver object
+    """
+    type = solver_config["type"]
+    if type == "runge_kutta":
+        return RungeKutta(**solver_config)
+    else:
+        raise Exception("Unknown solver type")
 
 class ICType(Enum):
     DIRECT = 1
@@ -200,9 +238,9 @@ class Advection(_JsonData):
     _type = "advection"
     ic_type = ICType.DIRECT
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.type = self._type
-        super().__init__()
+        super().__init__(**kwargs)
     
 class Burgers(_JsonData):
     _json_values = [
@@ -214,9 +252,9 @@ class Burgers(_JsonData):
     _type = "burgers"
     ic_type = ICType.DIRECT
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.type = self._type
-        super().__init__()
+        super().__init__(**kwargs)
 
 class Boltzmann(_JsonData):
     _json_values = [
@@ -229,9 +267,33 @@ class Boltzmann(_JsonData):
     _type = "boltzmann"
     ic_type = ICType.EQUILIBRIUM
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.type = self._type
-        super().__init__()
+        super().__init__(**kwargs)
+
+def make_equation(config):
+    """
+    Make an equation from the dictionary representation of the json config
+
+    Parameters
+    ----------
+    config: dict
+        The dictionary representation of the json config
+
+    Returns
+    -------
+    equation:
+        The equation
+    """
+    type = config.get("type", None)
+    if type == "advection":
+        return Advection(**config)
+    elif type == "burgers":
+        return Burgers(**config)
+    elif type == "boltzmann":
+        return Boltzmann(**config)
+    else:
+        raise Exception("Unknown equation")
 
 def prep():
     prep_script = sys.argv[1]
