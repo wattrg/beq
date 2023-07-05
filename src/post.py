@@ -202,16 +202,18 @@ def animate(data, repeat, interval, x_data=None):
         x_data = np.arange(0, len(initial_data), 1)
 
     line, = ax.plot(x_data, initial_data)
+    title = ax.set_title(f"plot index 0")
 
     def init():
         return line,
     
     def animate(i):
         line.set_data(x_data, data[i])
-        return line,
+        title.set_text(f"plot index {i}")
+        return line, title
 
     _ = FuncAnimation(fig, animate, repeat=repeat, init_func=init,
-                      frames=len(data), interval=interval, blit=True)
+                      frames=len(data), interval=interval)
     plt.show()
 
 if __name__ == "__main__":

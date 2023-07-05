@@ -9,57 +9,74 @@ Boltzmann::Boltzmann(json json_data) {
 
 __global__
 void eval_boltzmann_residual(double *phi, double *residual, 
-                             double dx, double dv, int n, int nv, double min_v)
+                             double dx, double dv, int nc, int nv, double min_v)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
-    for (int xi = index; xi < n; xi += stride) {
+    for (int ci = index; ci < nc; ci += stride) {
         for (int vi = 0; vi < nv; vi++) {
             double phi_minus, phi_plus;
             double v = min_v + (vi + 0.5) * dv;
 
+            int v_index = vi*nc;
+
             // left boundary
-            if (xi == 0) {
+            if (ci == 0) {
                 if (v > 0) {
                     // right moving particles
-                    phi_minus = phi[vi*n + n-1];
-                    phi_plus = phi[vi*n + xi];
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + nc-1];
                 }
-                else{
+                else if (v < 0){
                     // left moving particles
-                    phi_plus = phi[vi*n + xi + 1];
-                    phi_minus = phi[vi*n+ xi];
+                    phi_plus = phi[v_index + ci + 1];
+                    phi_minus = phi[v_index + ci];
+                }
+                else {
+                    // stationary particles
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + ci];
                 }
             }
 
             // right boundary
-            if (xi == n-1) {
+            if (ci == nc-1) {
                 if (v < 0) {
                     // left moving particle
-                    phi_plus = phi[vi*n + 0];
-                    phi_minus = phi[vi*n + xi];
+                    phi_plus = phi[v_index + 0];
+                    phi_minus = phi[v_index + ci];
+                }
+                else if (v > 0) {
+                    // right moving particle
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + ci - 1];
                 }
                 else {
-                    // right moving particle
-                    phi_plus = phi[vi*n + xi];
-                    phi_minus = phi[vi*n +xi - 1];
+                    // stationary particles
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + ci];
                 }
             }
 
             // interior cell
             if (v < 0) {
                 // left moving particles
-                phi_plus = phi[vi*n + xi + 1];
-                phi_minus = phi[vi*n + xi];
+                phi_plus = phi[v_index + ci + 1];
+                phi_minus = phi[v_index + ci];
+            }
+            else if (v > 0) {
+                // right moving particles
+                phi_plus = phi[v_index + ci];
+                phi_minus = phi[v_index + ci - 1];
             }
             else {
-                // right moving particles
-                phi_plus = phi[vi*n + xi];
-                phi_minus = phi[vi*n + xi - 1];
+                // stationary particles
+                phi_plus = phi[v_index + ci];
+                phi_minus = phi[v_index + ci];
             }
 
-            residual[vi*n + xi] = v * (phi_plus - phi_minus);
+            residual[vi*nc + ci] = v * (phi_plus - phi_minus);
         } 
     }
 }
@@ -83,5 +100,6 @@ void Boltzmann::eval_residual(Field<double> &phi, Field<double> &residual,
 
 double Boltzmann::allowable_dt(Field<double> &phi, Domain &domain){
     (void) phi;
-    return domain.dx() / _max_v;
+    double max_v = fmax(fabs(_min_v), fabs(_max_v));
+    return domain.dx() / max_v;
 }

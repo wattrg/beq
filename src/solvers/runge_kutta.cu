@@ -96,7 +96,7 @@ void RungeKutta::_write_solution() {
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
     for (unsigned i = 0; i < _phi_cpu->size(); i++){
-        file << (*_phi_cpu).flat_index(i);
+        file << std::setprecision(16) << (*_phi_cpu).flat_index(i);
         file << "\n";
     }
     file.close();

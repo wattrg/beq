@@ -3,7 +3,7 @@ config.title = "boltzmann quiescent flow"
 v = 500
 L = 10
 flow_time = L / v
-n = 3
+n = 100
 
 n_vel_increments = 100
 
