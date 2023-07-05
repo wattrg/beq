@@ -34,19 +34,26 @@ def main():
         repeat = "--repeat" in sys.argv
         direct_animation(repeat)
     elif action == Action.PHI_TO_MACROSCOPIC:
-        with open("config/config.json", "r") as config_file:
-            config = json.load(config_file)
-        config = Config(config)
+        config = read_config()
         phi_to_macroscopic(config)
     elif action == Action.ANIMATE_MACROSCOPIC:
-        variables = sys.argv[2:]
-        plot_macroscopic(variables)
+        variable = sys.argv[2]
+        # if the macroscopic variables haven't been computed yet
+        # we need to do that first
+        if not os.path.exists("plot"):
+            config = read_config()
+            phi_to_macroscopic(config)
+
+        plot_macroscopic(variable)
     elif action == Action.ANIMATE_DISTRIBUTION:
-        with open("config/config.json", "r") as config_file:
-            config = json.load(config_file)
-        config = Config(config)
+        config = read_config()
         cell_i = int(sys.argv[2])
         animate_distribution(config, cell_i)
+
+def read_config():
+    with open("config/config.json", "r") as config_file:
+        config = json.load(config_file)
+    return Config(config)
 
 class Action(Enum):
     ANIMATE_DIRECT = 1
@@ -162,11 +169,7 @@ def moment_of_distibution(config, phi, order):
     min_v = config.equation.min_v
     dv = (max_v - min_v) / nv
     vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
-
-    total = 0
-    for i in range(nv):
-        total += vels[i]**order * phi[i] * dv
-    return total
+    return np.trapz(phi, vels)
 
 def plot_macroscopic(var, repeat=False):
     folders = next(os.walk("plot"))[1]
@@ -174,7 +177,7 @@ def plot_macroscopic(var, repeat=False):
 
     data = []
     for i in range(number_solutions):
-        data.append(np.loadtxt(f"plot/{i}/{var[0]}.beq"))
+        data.append(np.loadtxt(f"plot/{i}/{var}.beq"))
 
     animate(data, repeat, 20)
     
