@@ -1,11 +1,11 @@
 config.title = "boltzmann quiescent flow"
 
-v = 500
-L = 10
+v = 200
+L = 1
 flow_time = L / v
-n = 100
+n = 10
 
-n_vel_increments = 100
+n_vel_increments = 500
 
 def initial_condition(x):
     return FlowState(rho = 1.0, T = 300, v = v)

@@ -9,7 +9,7 @@ import glob
 import sys
 import json
 
-from prep import Config
+from prep import Config, kB
 
 NA = 6.022e23 # particles / mol
 R_UNIV = 8.314463 # J / K / mol
@@ -97,13 +97,13 @@ def phi_to_macroscopic(config):
     length = config.domain.length
     nc = config.domain.number_cells
     dx = length / nc
+    volume = dx
     nv = config.equation.n_vel_increments
     mass = config.gas_model.mass
-    molar_mass = mass * NA
 
     # compute gas properties
-    R = R_UNIV / molar_mass
-    Cv = (3 / 2) * R
+    R = kB / mass
+    Cv = (5. / 2.) * R
 
     density = np.zeros(nc)
     momentum = np.zeros(nc)
@@ -129,13 +129,13 @@ def phi_to_macroscopic(config):
         for cell_i in range(nc):
             phi = phis[:, cell_i]
             # moments of the distribution function
-            density[cell_i] = mass * moment_of_distibution(config, phi, 0) / dx
-            momentum[cell_i] = mass * moment_of_distibution(config, phi, 1) / dx
-            energy[cell_i] = mass * moment_of_distibution(config, phi, 2) / 2 / dx
+            density[cell_i] = mass * moment_of_distribution(config, phi, 0) / volume
+            momentum[cell_i] = mass * moment_of_distribution(config, phi, 1) / volume
+            energy[cell_i] = mass * moment_of_distribution(config, phi, 2) / (2 * volume)
 
             # derived quantities
-            temperature[cell_i] = energy[cell_i] / Cv            
-            velocity[cell_i] = momentum[cell_i] / mass
+            temperature[cell_i] = energy[cell_i] / Cv           
+            velocity[cell_i] = momentum[cell_i] / density[cell_i]
             pressure = density[cell_i] * R * temperature[cell_i]
 
 
@@ -147,7 +147,7 @@ def phi_to_macroscopic(config):
                 np.savetxt(f, variables[var])
 
 
-def moment_of_distibution(config, phi, order):
+def moment_of_distribution(config, phi, order):
     """ 
     Compute a moment of the distribution function 
 
@@ -169,7 +169,7 @@ def moment_of_distibution(config, phi, order):
     min_v = config.equation.min_v
     dv = (max_v - min_v) / nv
     vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
-    return np.trapz(phi, vels)
+    return np.trapz(phi, vels**order*vels)
 
 def plot_macroscopic(var, repeat=False):
     folders = next(os.walk("plot"))[1]

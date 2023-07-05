@@ -29,10 +29,10 @@ def maxwellian_distribution(flow_state, vel, gas, volume):
     """
     mass = gas.mass
     T = flow_state.T
-    mass_on_two_pi_kB_T = mass/(2*np.pi*kB*T)
+    norm = (mass/(2*np.pi*kB*T))**(1./2.)
     exponent = -mass/(2*kB*T)*(vel - flow_state.v)**2
     number_particles = flow_state.rho / mass * volume
-    return number_particles * mass_on_two_pi_kB_T**(3./2.) * np.exp(exponent)
+    return number_particles * norm * np.exp(exponent)
 
 class FlowState:
     __slots__ = ["rho", "T", "v"]
