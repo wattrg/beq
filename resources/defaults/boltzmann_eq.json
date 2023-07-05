@@ -1,5 +1,6 @@
 {
     "type": "boltzmann",
-    "dv": 1,
+    "min_v": -100,
+    "max_v": 100,
     "n_vel_increments": 10
 }

@@ -69,17 +69,16 @@ def get_action(action_string):
 def animate_distribution(config, cell_i, interval=20, repeat=False):
     data = read_phi()
     nc = config.domain.number_cells
-    nv = config.equation.n_vel_increments * 2
-    dv = config.equation.dv
-    n_vel_inc = config.equation.n_vel_increments
-    max_v = (n_vel_inc + 0.5) * dv
-    vels = np.arange(0.5*dv, max_v, dv)
-    vels = np.append(vels, -vels)
+    min_v = config.equation.min_v
+    max_v = config.equation.max_v
+    nv = config.equation.n_vel_increments
+    dv = (max_v - min_v) / nv
+    vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
 
     distributions = []
     for time_i in range(len(data)):
-        phis = data[time_i].reshape((nc, nv))
-        distributions.append(phis[cell_i, :])
+        phis = data[time_i].reshape((nv, nc))
+        distributions.append(phis[:, cell_i])
     
     animate(distributions, repeat, interval, vels)
 
@@ -91,7 +90,7 @@ def phi_to_macroscopic(config):
     length = config.domain.length
     nc = config.domain.number_cells
     dx = length / nc
-    nv = config.equation.n_vel_increments * 2
+    nv = config.equation.n_vel_increments
     mass = config.gas_model.mass
     molar_mass = mass * NA
 
@@ -119,9 +118,9 @@ def phi_to_macroscopic(config):
 
 
     for time_i in range(len(data)):
-        phis = data[time_i].reshape((nc, nv))
+        phis = data[time_i].reshape((nv, nc))
         for cell_i in range(nc):
-            phi = phis[cell_i]
+            phi = phis[:, cell_i]
             # moments of the distribution function
             density[cell_i] = mass * moment_of_distibution(config, phi, 0) / dx
             momentum[cell_i] = mass * moment_of_distibution(config, phi, 1) / dx
@@ -158,12 +157,11 @@ def moment_of_distibution(config, phi, order):
     -------
     float: The moment of the distribution function
     """
-    dv = config.equation.dv
     nv = config.equation.n_vel_increments
-    max_v = (nv + 0.5) * dv
-    vels = np.arange(0.5*dv, max_v, dv)
-    vels = np.append(vels, -vels)
-    nv = len(vels)
+    max_v = config.equation.max_v
+    min_v = config.equation.min_v
+    dv = (max_v - min_v) / nv
+    vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
 
     total = 0
     for i in range(nv):

@@ -1,15 +1,14 @@
 config.title = "boltzmann quiescent flow"
 
-v = 1
-L = 1
+v = 500
+L = 10
 flow_time = L / v
-n = 10
+n = 3
 
-max_v = 10000 * v
-n_vel_increments = 1000
+n_vel_increments = 100
 
 def initial_condition(x):
-    return FlowState(rho = 1.0, T = 300, v = 5)
+    return FlowState(rho = 1.0, T = 300, v = v)
 
 
 config.domain = Domain()
@@ -19,7 +18,8 @@ config.domain.length = L
 config.gas_model = GasModel("air")
 
 config.equation = Boltzmann()
-config.equation.dv = max_v / n_vel_increments
+config.equation.min_v = -2000
+config.equation.max_v = 2000
 config.equation.n_vel_increments = n_vel_increments
 
 config.solver = RungeKutta()

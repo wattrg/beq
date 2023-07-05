@@ -151,19 +151,17 @@ class Config(_JsonData):
 
     def _write_equilibrium_initial_condition(self):
         dx = self.domain.length / self.domain.number_cells
-        dv = self.equation.dv
-        n_vel_inc = self.equation.n_vel_increments
-        max_v = (n_vel_inc + 0.5) * dv
-        vels = np.arange(0.5*dv, max_v, dv)
-        vels = np.append(vels, -vels)
+        min_v = self.equation.min_v
+        max_v = self.equation.max_v
+        nv = self.equation.n_vel_increments
+        dv = (max_v - min_v) / nv
+        vels = np.linspace(min_v + dv/2, max_v-dv/2, nv)
         with open("solution/phi_0.beq", "w") as ic:
             for vel in vels:
                 for i in range(self.domain.number_cells):
                     x = (i + 0.5) * dx
                     flow_state = self.initial_condition(x)
-                    dist = maxwellian_distribution(
-                        flow_state, vel, self.gas_model, dx
-                    )
+                    dist = maxwellian_distribution(flow_state, vel, self.gas_model, dx)
                     ic.write(f"{dist}\n")
 
     def _write_initial_condition(self):
@@ -263,7 +261,8 @@ class Burgers(_JsonData):
 class Boltzmann(_JsonData):
     _json_values = [
         "type",
-        "dv",
+        "min_v",
+        "max_v",
         "n_vel_increments",
     ]
     __slots__ = _json_values
