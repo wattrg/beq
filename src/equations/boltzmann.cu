@@ -23,12 +23,12 @@ void eval_boltzmann_residual(double *phi, double *residual,
 
             // left boundary
             if (ci == 0) {
-                if (v > 0) {
+                if (v > 0.0) {
                     // right moving particles
                     phi_plus = phi[v_index + ci];
                     phi_minus = phi[v_index + nc-1];
                 }
-                else if (v < 0){
+                else if (v < 0.0){
                     // left moving particles
                     phi_plus = phi[v_index + ci + 1];
                     phi_minus = phi[v_index + ci];
@@ -41,13 +41,13 @@ void eval_boltzmann_residual(double *phi, double *residual,
             }
 
             // right boundary
-            if (ci == nc-1) {
-                if (v < 0) {
+            else if (ci == nc-1) {
+                if (v < 0.0) {
                     // left moving particle
                     phi_plus = phi[v_index + 0];
                     phi_minus = phi[v_index + ci];
                 }
-                else if (v > 0) {
+                else if (v > 0.0) {
                     // right moving particle
                     phi_plus = phi[v_index + ci];
                     phi_minus = phi[v_index + ci - 1];
@@ -58,25 +58,27 @@ void eval_boltzmann_residual(double *phi, double *residual,
                     phi_minus = phi[v_index + ci];
                 }
             }
-
-            // interior cell
-            if (v < 0) {
-                // left moving particles
-                phi_plus = phi[v_index + ci + 1];
-                phi_minus = phi[v_index + ci];
-            }
-            else if (v > 0) {
-                // right moving particles
-                phi_plus = phi[v_index + ci];
-                phi_minus = phi[v_index + ci - 1];
-            }
+            
             else {
-                // stationary particles
-                phi_plus = phi[v_index + ci];
-                phi_minus = phi[v_index + ci];
+                // interior cell
+                if (v < 0.0) {
+                    // left moving particles
+                    phi_plus = phi[v_index + ci + 1];
+                    phi_minus = phi[v_index + ci];
+                }
+                else if (v > 0.0) {
+                    // right moving particles
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + ci - 1];
+                }
+                else {
+                    // stationary particles
+                    phi_plus = phi[v_index + ci];
+                    phi_minus = phi[v_index + ci];
+                }
             }
 
-            residual[vi*nc + ci] = v * (phi_plus - phi_minus);
+            residual[v_index + ci] = v * (phi_plus - phi_minus) / dx;
         } 
     }
 }
