@@ -63,16 +63,14 @@ public:
     double allowable_dt(Field<double> &phi, Domain &domain);
 
     int number_components() {
-        // _n_velocity_increments is the number of increments in the positive
-        // velocities. We also need to track the negative velocities, so
-        // we need twice the number of components in data field.
-        return 2 * _n_velocity_increments;
+        return _nv;
     }
 
 private:
     double _dv;
+    double _min_v;
     double _max_v;
-    int _n_velocity_increments;
+    int _nv;
 };
 
 Equation * create_equation(json json_data);
