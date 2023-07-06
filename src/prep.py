@@ -7,7 +7,7 @@ import sys
 from enum import Enum
 import numpy as np
 
-kB = 1.380649e-23
+kB = 1.380649e-23 # J / K
 
 def maxwellian_distribution(flow_state, vel, gas, volume):
     """

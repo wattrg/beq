@@ -102,8 +102,7 @@ def phi_to_macroscopic(config):
     mass = config.gas_model.mass
 
     # compute gas properties
-    R = kB / mass
-    Cv = (5. / 2.) * R
+    R = kB / mass # J / (kg * K)
 
     density = np.zeros(nc)
     momentum = np.zeros(nc)
@@ -124,20 +123,28 @@ def phi_to_macroscopic(config):
         os.mkdir("plot")
 
 
+    nv = config.equation.n_vel_increments
+    max_v = config.equation.max_v
+    min_v = config.equation.min_v
+    dv = (max_v - min_v) / nv
+    vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
+
     for time_i in range(len(data)):
         phis = data[time_i].reshape((nv, nc))
         for cell_i in range(nc):
             phi = phis[:, cell_i]
+
             # moments of the distribution function
-            density[cell_i] = mass * moment_of_distribution(config, phi, 0) / volume
-            momentum[cell_i] = mass * moment_of_distribution(config, phi, 1) / volume
-            energy[cell_i] = mass * moment_of_distribution(config, phi, 2) / (2 * volume)
+            n = moment_of_distribution(vels, phi, 0)
+            density[cell_i] = mass * n / volume
+            momentum[cell_i] = mass * moment_of_distribution(vels, phi, 1) / volume
+            energy_x = mass * moment_of_distribution(vels, phi, 2) / (2 * volume)
 
             # derived quantities
-            temperature[cell_i] = energy[cell_i] / Cv           
             velocity[cell_i] = momentum[cell_i] / density[cell_i]
-            pressure = density[cell_i] * R * temperature[cell_i]
-
+            temperature[cell_i] = energy_x/(density[cell_i]*(1./2.)*R)
+            energy[cell_i] = (3./2.) * R * temperature[cell_i]
+            pressure[cell_i] = density[cell_i] * R * temperature[cell_i]
 
         if not os.path.exists(f"plot/{time_i}"):
             os.mkdir(f"plot/{time_i}")
@@ -146,8 +153,7 @@ def phi_to_macroscopic(config):
             with open(f"plot/{time_i}/{var}.beq", "w") as f:
                 np.savetxt(f, variables[var])
 
-
-def moment_of_distribution(config, phi, order):
+def moment_of_distribution(vels, phi, order):
     """ 
     Compute a moment of the distribution function 
 
@@ -164,12 +170,7 @@ def moment_of_distribution(config, phi, order):
     -------
     float: The moment of the distribution function
     """
-    nv = config.equation.n_vel_increments
-    max_v = config.equation.max_v
-    min_v = config.equation.min_v
-    dv = (max_v - min_v) / nv
-    vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
-    return np.trapz(phi, vels**order*vels)
+    return np.trapz(vels**order * phi, vels)
 
 def plot_macroscopic(var, repeat=False):
     folders = next(os.walk("plot"))[1]
