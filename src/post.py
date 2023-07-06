@@ -133,16 +133,11 @@ def phi_to_macroscopic(config):
         phis = data[time_i].reshape((nv, nc))
         for cell_i in range(nc):
             phi = phis[:, cell_i]
-
-            # moments of the distribution function
-            n = moment_of_distribution(vels, phi, 0)
-            density[cell_i] = mass * n / volume
+            density[cell_i] = mass * moment_of_distribution(vels, phi, 0) / volume
             momentum[cell_i] = mass * moment_of_distribution(vels, phi, 1) / volume
-            energy_x = mass * moment_of_distribution(vels, phi, 2) / (2 * volume)
-
-            # derived quantities
             velocity[cell_i] = momentum[cell_i] / density[cell_i]
-            temperature[cell_i] = energy_x/(density[cell_i]*(1./2.)*R)
+            thermal_energy_x = mass * moment_of_distribution(vels, phi, 2, velocity[cell_i]) / (2 * volume)
+            temperature[cell_i] = thermal_energy_x/(density[cell_i]*(1./2.)*R)
             energy[cell_i] = (3./2.) * R * temperature[cell_i]
             pressure[cell_i] = density[cell_i] * R * temperature[cell_i]
 
@@ -153,7 +148,7 @@ def phi_to_macroscopic(config):
             with open(f"plot/{time_i}/{var}.beq", "w") as f:
                 np.savetxt(f, variables[var])
 
-def moment_of_distribution(vels, phi, order):
+def moment_of_distribution(vels, phi, order, avg=0):
     """ 
     Compute a moment of the distribution function 
 
@@ -170,7 +165,7 @@ def moment_of_distribution(vels, phi, order):
     -------
     float: The moment of the distribution function
     """
-    return np.trapz(vels**order * phi, vels)
+    return np.trapz((vels-avg)**order * phi, vels-avg)
 
 def plot_macroscopic(var, repeat=False):
     folders = next(os.walk("plot"))[1]
