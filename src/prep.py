@@ -35,7 +35,8 @@ def maxwellian_distribution(flow_state, vel, gas, volume):
     return number_particles * norm * np.exp(exponent)
 
 class FlowState:
-    __slots__ = ["rho", "T", "v"]
+    _values = ["rho", "T", "v"]
+    __slots__ = _values 
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -92,6 +93,18 @@ class _JsonData:
 
 
 
+class BoundaryType(Enum):
+    Dirichlet = "dirichlet"
+    Neumann = "neumann"
+    Periodic = "periodic"
+
+
+class BoundaryCondition(_JsonData):
+    _json_values = ["type", "value"]
+    __slots__ = _json_values
+    _default = "boundary_condition.json"
+
+
 class Config(_JsonData):
     _json_values = [
         "title"
@@ -128,8 +141,7 @@ class Config(_JsonData):
                     self.__setattr__(key, value)
 
     def _write_json_config(self):
-        if not os.path.exists("config"):
-            os.mkdir("config")
+        self._transform_equilibrium_dirichlet_boundaries()
 
         json_values = self.to_dict()
         json_values["solver"] = self.solver.to_dict()
@@ -138,8 +150,34 @@ class Config(_JsonData):
         if hasattr(self, "gas_model"):
             json_values["gas_model"] = self.gas_model.to_dict()
 
+        if not os.path.exists("config"):
+            os.mkdir("config")
         with open("config/config.json", "w") as file:
             json.dump(json_values, file, indent=4)
+
+    def _transform_equilibrium_dirichlet_boundaries(self):
+        if self.equation.field_type != FieldType.EQUILIBRIUM:
+            return
+
+        left = self.domain.left_boundary
+        right = self.domain.right_boundary
+        if left.type == BoundaryType.Dirichlet or right.type == BoundaryType.Dirichlet:
+            min_v = self.equation.min_v
+            max_v = self.equation.max_v
+            nv = self.equation.n_vel_increments
+            dv = (max_v - min_v) / nv
+            vels = np.linspace(min_v + dv/2, max_v-dv/2, nv)
+            dx = self.domain.length / self.domain.number_cells
+
+        if left == BoundaryType.Dirichlet:
+            for vel in vels:
+                dist = maxwellian_distribution(left.value, vel, self.gas_model, dx)
+            self.domain.left_boundary.value = dist
+
+        if right == BoundaryType.Dirichlet:
+            for vel in vels:
+                dist = maxwellian_distribution(right.value, vel, self.gas_model, dx)
+            self.domain.right_boundary.value = dist
 
     def _write_direct_initial_condition(self):
         dx = self.domain.length / self.domain.number_cells
@@ -168,15 +206,16 @@ class Config(_JsonData):
         if not os.path.exists("solution"):
             os.mkdir("solution")
 
-        if self.equation.ic_type == ICType.EQUILIBRIUM:
+        if self.equation.field_type == FieldType.EQUILIBRIUM:
             self._write_equilibrium_initial_condition()
 
-        elif self.equation.ic_type == ICType.DIRECT:
+        elif self.equation.field_type == FieldType.DIRECT:
             self._write_direct_initial_condition()
 
     def write(self):
         self._write_json_config()
         self._write_initial_condition()
+
 
 class RungeKutta(_JsonData):
     _json_values = [
@@ -216,9 +255,10 @@ def make_solver(solver_config):
     else:
         raise Exception("Unknown solver type")
 
-class ICType(Enum):
+class FieldType(Enum):
     DIRECT = 1
     EQUILIBRIUM = 2
+
 
 
 class Domain(_JsonData):
@@ -226,8 +266,25 @@ class Domain(_JsonData):
         "number_cells",
         "length",
     ]
-    __slots__ = _json_values
+
+    _python_values = [
+        "left_boundary",
+        "right_boundary"
+    ]
+
+    __slots__ = _json_values + _python_values
     _default = "domain.json"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.left_boundary = BoundaryCondition()
+        self.right_boundary = BoundaryCondition()
+
+    def to_dict(self):
+        domain = super().to_dict()
+        domain["left_boundary"] = self.left_boundary.to_dict()
+        domain["right_boundary"] = self.right_boundary.to_dict()
+        return domain
 
 
 class Advection(_JsonData):
@@ -238,12 +295,13 @@ class Advection(_JsonData):
     __slots__ = _json_values
     _default = "advection_eq.json"
     _type = "advection"
-    ic_type = ICType.DIRECT
+    field_type = FieldType.DIRECT
 
     def __init__(self, **kwargs):
         self.type = self._type
         super().__init__(**kwargs)
     
+
 class Burgers(_JsonData):
     _json_values = [
         "type",
@@ -252,7 +310,7 @@ class Burgers(_JsonData):
     __slots__ = _json_values
     _default = "burgers_eq.json"
     _type = "burgers"
-    ic_type = ICType.DIRECT
+    field_type = FieldType.DIRECT
 
     def __init__(self, **kwargs):
         self.type = self._type
@@ -266,9 +324,10 @@ class Boltzmann(_JsonData):
         "n_vel_increments",
     ]
     __slots__ = _json_values
+
     _default = "boltzmann_eq.json"
     _type = "boltzmann"
-    ic_type = ICType.EQUILIBRIUM
+    field_type = FieldType.EQUILIBRIUM
 
     def __init__(self, **kwargs):
         self.type = self._type
@@ -310,6 +369,8 @@ def prep():
         "Boltzmann": Boltzmann,
         "FlowState": FlowState,
         "GasModel": GasModel,
+        "BoundaryCondition": BoundaryCondition,
+        "BoundaryType": BoundaryType,
     }
     with open(prep_script, "r") as f:
         exec(f.read(), namespace)

@@ -50,6 +50,7 @@ StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
     double dt = _cfl * equation.allowable_dt(*_phi_buffers[0], domain);
 
     for (int stage = 0; stage < _n_stages; stage++){
+        fill_boundaries(*_phi_buffers[stage], domain, equation);
         equation.eval_residual(*_phi_buffers[stage], *_residual, domain);
 
         apply_residual<<<n_blocks,block_size>>>(
@@ -66,6 +67,7 @@ StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
 
     bool phi_valid = equation.check_phi(*_phi_buffers[0], domain);
     if (!phi_valid) {
+        std::cerr << "Invalid state" << std::endl;
         return StepResult::Failure;
     }
 

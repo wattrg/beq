@@ -1,3 +1,4 @@
+set -e
 beq clean
 beq prep step.py
 beq run

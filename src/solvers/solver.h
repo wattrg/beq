@@ -6,6 +6,7 @@
 
 #include "../equations/equation.h"
 #include "../domain.h"
+#include "../boundary.h"
 
 enum class StepResult {Success, Failure};
 
