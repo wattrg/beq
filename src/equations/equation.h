@@ -57,7 +57,9 @@ private:
 class Boltzmann : public Equation {
 public:
     Boltzmann(json json_data);
-    ~Boltzmann(){}
+    ~Boltzmann(){
+        cudaFree(_phi_valid_gpu);
+    }
 
     void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain);
 

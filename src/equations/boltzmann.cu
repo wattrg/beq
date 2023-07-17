@@ -12,6 +12,12 @@ Boltzmann::Boltzmann(json json_data) {
         std::cerr << "Failed to allocate phi_valid on the GPU: " << cudaGetErrorString(code) << std::endl;
         throw std::runtime_error("Failed to allocate phi_valid on GPU.");
     }
+    bool valid = true;
+    code = cudaMemcpy(_phi_valid_gpu, &valid, sizeof(valid), cudaMemcpyHostToHost);    
+    if (code != cudaSuccess) {
+        std::cerr << "Failed to set phi_valid to true: " << cudaGetErrorString(code) << std::endl;
+        throw std::runtime_error("Failed to set phi_vaild to true");
+    }
 }
 
 __global__
@@ -120,7 +126,8 @@ void check_phi_gpu(double *phi, bool *valid, int nc, int nv) {
 
     for (int ci = index; ci < nc; ci += stride) {
         for (int vi = 0; vi < nv; vi++){
-            if (phi[vi] < 0) {
+            if (phi[vi*nc + ci] < -1.0) {
+                printf("ci = %d, vi = %d, phi = %.16e\n", ci, vi, phi[vi*nc + ci]);
                 *valid = false;
             }
         }
