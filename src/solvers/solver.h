@@ -18,6 +18,7 @@ public:
 
             if (step_result == StepResult::Failure) {
                 // for now, we'll just give up
+                std::cerr << "Failed to take a step at step " << _step_num << std::endl;
                 throw std::runtime_error("Failed to take a step");
             }
 

@@ -13,7 +13,7 @@ public:
     virtual void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain) = 0;
     virtual double allowable_dt(Field<double> &phi, Domain &domain) = 0;
     virtual int number_components() = 0;        
-    virtual bool check_phi(Field<double> &phi, Domain &domain) = 0;
+    virtual bool check_phi(Field<double> &phi, Domain &domain) { (void)phi; (void)domain; return true; };
 };
 
 class Advection : public Equation {
@@ -34,8 +34,6 @@ public:
 
     int number_components() {return 1;}
 
-    bool check_phi(Field<double> &phi, Domain &domain) { return true; }
-
 private:
     double _velocity;
 };
@@ -50,8 +48,6 @@ public:
     double allowable_dt(Field<double> &phi, Domain &domain);
 
     int number_components() {return 1;}
-
-    bool check_phi(Field<double> &phi, Domain &domain) { return true; }
 
 private:
     int *_min_dt_gpu;
