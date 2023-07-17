@@ -5,6 +5,13 @@ Boltzmann::Boltzmann(json json_data) {
     _max_v = json_data.at("max_v");
     _nv = json_data.at("n_vel_increments");
     _dv = (_max_v - _min_v) / _nv;
+
+    auto code = cudaMalloc(&_phi_valid_gpu, sizeof(bool));
+
+    if (code != cudaSuccess) {
+        std::cerr << "Failed to allocate phi_valid on the GPU: " << cudaGetErrorString(code) << std::endl;
+        throw std::runtime_error("Failed to allocate phi_valid on GPU.");
+    }
 }
 
 __global__
@@ -104,4 +111,40 @@ double Boltzmann::allowable_dt(Field<double> &phi, Domain &domain){
     (void) phi;
     double max_v = fmax(fabs(_min_v), fabs(_max_v));
     return domain.dx() / max_v;
+}
+
+__global__
+void check_phi_gpu(double *phi, bool *valid, int nc, int nv) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    for (int ci = index; ci < nc; ci += stride) {
+        for (int vi = 0; vi < nv; vi++){
+            if (phi[vi] < 0) {
+                *valid = false;
+            }
+        }
+    }
+}
+
+bool Boltzmann::check_phi(Field<double> &phi, Domain &domain) {
+    unsigned n_blocks = domain.number_blocks();
+    unsigned block_size = domain.block_size();
+
+    check_phi_gpu<<<n_blocks, block_size>>>(phi.data(), _phi_valid_gpu, domain.number_cells(), _nv);
+
+    auto code = cudaGetLastError();
+    if (code != cudaSuccess) {
+        std::cerr << "Cuda error while checking phi: " << cudaGetErrorString(code) << std::endl;
+        return false;
+    }
+
+    bool phi_valid;
+    code = cudaMemcpy(&phi_valid, _phi_valid_gpu, sizeof(bool), cudaMemcpyDeviceToHost);
+    if (code != cudaSuccess) {
+        std::cerr << "Boltzmann: Cuda memcpy error for phi_valid: " << cudaGetErrorString(code) << std::endl;
+        return false;
+    }
+
+    return phi_valid;
 }

@@ -43,7 +43,7 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
     }
 }
 
-void RungeKutta::_take_step(Equation &equation, Domain &domain) {
+StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
 
@@ -59,14 +59,20 @@ void RungeKutta::_take_step(Equation &equation, Domain &domain) {
         auto code = cudaGetLastError();
         if (code != cudaSuccess) {
             std::cerr << "Cuda error in RungeKutta step: " << cudaGetErrorString(code) << std::endl;
-            throw new std::runtime_error("Encountered cuda error");
+            return StepResult::Failure;
         }
 
     }
 
+    bool phi_valid = equation.check_phi(*_phi_buffers[0], domain);
+    if (!phi_valid) {
+        return StepResult::Failure;
+    }
 
     _t += dt;
     _time_since_last_plot += dt;
+
+    return StepResult::Success;
 }
 
 bool RungeKutta::_stop() {

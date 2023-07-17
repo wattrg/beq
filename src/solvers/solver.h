@@ -7,12 +7,20 @@
 #include "../equations/equation.h"
 #include "../domain.h"
 
+enum class StepResult {Success, Failure};
+
 class Solver {
 public:
     virtual ~Solver() {};
     void solve(Equation &equation, Domain &domain) {
         while (true) {
-            _take_step(equation, domain);
+            StepResult step_result = _take_step(equation, domain);
+
+            if (step_result == StepResult::Failure) {
+                // for now, we'll just give up
+                throw std::runtime_error("Failed to take a step");
+            }
+
             _step_num++;
 
             if (_print_this_step()) {
@@ -38,7 +46,7 @@ public:
 
 protected:
     int _step_number() const { return _step_num; }
-    virtual void _take_step(Equation &equation, Domain &domain) = 0;
+    virtual StepResult _take_step(Equation &equation, Domain &domain) = 0;
     virtual bool _stop() = 0;
     virtual std::string _stop_reason() = 0;
     virtual bool _print_this_step() = 0;

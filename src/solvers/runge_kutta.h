@@ -43,7 +43,7 @@ private:
     std::vector<Field<double>*> _phi_buffers;
 
     // implementation
-    void _take_step(Equation &equation, Domain &domain);
+    StepResult _take_step(Equation &equation, Domain &domain);
     bool _stop();
     std::string _stop_reason();
     bool _print_this_step();
