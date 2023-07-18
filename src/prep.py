@@ -105,13 +105,26 @@ class BoundaryType(Enum):
     Neumann = "neumann"
     Periodic = "periodic"
 
+def string_to_boundary_type(string):
+    if string == BoundaryType.Dirichlet.value:
+        return BoundaryType.Dirichlet
+    if string == BoundaryType.Neumann.value:
+        return BoundaryType.Neumann
+    if string == BoundaryType.Periodic.value:
+        return BoundaryType.Periodic
+    raise Exception(f"Unknown boundary type {string}")
 
 class BoundaryCondition(_JsonData):
     _json_values = ["type", "value"]
     __slots__ = _json_values
     _default = "boundary_condition.json"
 
+    def __init__(self):
+        super().__init__()
+        self.type = string_to_boundary_type(self.type)
+
     def to_dict(self):
+        print(self.type)
         return {
             "type": self.type.value,
             "vaue": self.value
