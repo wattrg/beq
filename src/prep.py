@@ -42,6 +42,13 @@ class FlowState:
         for key, value in kwargs.items():
             self.__setattr__(key, value)
 
+    def to_dict(self):
+        flow_state = {}
+        for key in self._values:
+            if hasattr(self, key):
+                flow_state[key] = self.__getattribute__(key)
+        return flow_state
+
 
 class GasModel:
     _values = ["mass"]
@@ -103,6 +110,12 @@ class BoundaryCondition(_JsonData):
     _json_values = ["type", "value"]
     __slots__ = _json_values
     _default = "boundary_condition.json"
+
+    def to_dict(self):
+        return {
+            "type": self.type.value,
+            "vaue": self.value
+        }
 
 
 class Config(_JsonData):
@@ -169,14 +182,16 @@ class Config(_JsonData):
             vels = np.linspace(min_v + dv/2, max_v-dv/2, nv)
             dx = self.domain.length / self.domain.number_cells
 
-        if left == BoundaryType.Dirichlet:
+        if left.type == BoundaryType.Dirichlet:
+            dist = []
             for vel in vels:
-                dist = maxwellian_distribution(left.value, vel, self.gas_model, dx)
+                dist.append(maxwellian_distribution(left.value, vel, self.gas_model, dx))
             self.domain.left_boundary.value = dist
 
-        if right == BoundaryType.Dirichlet:
+        if right.type == BoundaryType.Dirichlet:
+            dist = []
             for vel in vels:
-                dist = maxwellian_distribution(right.value, vel, self.gas_model, dx)
+                dist.append(maxwellian_distribution(right.value, vel, self.gas_model, dx))
             self.domain.right_boundary.value = dist
 
     def _write_direct_initial_condition(self):
