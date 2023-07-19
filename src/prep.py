@@ -119,9 +119,10 @@ class BoundaryCondition(_JsonData):
     __slots__ = _json_values
     _default = "boundary_condition.json"
 
-    def __init__(self):
-        super().__init__()
-        self.type = string_to_boundary_type(self.type)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if type(self.type) != BoundaryType:
+            self.type = string_to_boundary_type(self.type)
 
     def to_dict(self):
         print(self.type)
