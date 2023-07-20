@@ -67,7 +67,7 @@ void fill_boundaries(Field<double> &phi, Domain &domain, Equation &equation) {
             copy_cell<<<1,1>>>(phi.data(), 1, 0, nc, nv);
             break;
         case BoundaryType::Dirichlet:
-            fill_dirichlet<<<1,1>>>(phi.data(), domain.left_boundary_value().data(), 0, nc, nv);
+            fill_dirichlet<<<1,1>>>(phi.data(), domain.left_boundary_value()->data(), 0, nc, nv);
             break;
         default:
             std::cerr << "Unitialised left boundary" << std::endl;
@@ -83,7 +83,7 @@ void fill_boundaries(Field<double> &phi, Domain &domain, Equation &equation) {
             copy_cell<<<1,1>>>(phi.data(), nc, nc+1, nc, nv);
             break;
         case BoundaryType::Dirichlet:
-            fill_dirichlet<<<1,1>>>(phi.data(), domain.left_boundary_value().data(), nc+1, nc, nv);
+            fill_dirichlet<<<1,1>>>(phi.data(), domain.right_boundary_value()->data(), nc+1, nc, nv);
             break;
         default:
             std::cerr << "Unitialised right boundary" << std::endl;

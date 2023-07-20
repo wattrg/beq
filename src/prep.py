@@ -127,7 +127,7 @@ class BoundaryCondition(_JsonData):
     def to_dict(self):
         return {
             "type": self.type.value,
-            "vaue": self.value
+            "value": self.value
         }
 
 
