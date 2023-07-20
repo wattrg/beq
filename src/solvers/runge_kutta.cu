@@ -16,10 +16,11 @@ RungeKutta::RungeKutta(json json_config, Domain &domain, Equation *equation)
     // allocate memory
     int n_comp = equation->number_components();
     unsigned n = domain.number_cells();
-    this->_phi_cpu = new Field<double>(n, n_comp, false); // allocated on CPU
-    this->_residual = new Field<double>(n, n_comp, true); // allocated on GPU
+    unsigned n_ghost = domain.number_ghost();
+    this->_phi_cpu = new Field<double>(n, n_ghost, n_comp, false); // allocated on CPU
+    this->_residual = new Field<double>(n, n_ghost, n_comp, true); // allocated on GPU
     for (int stage = 0; stage < _n_stages; stage++) {
-        Field<double> * field = new Field<double>(n, n_comp, true);
+        Field<double> * field = new Field<double>(n, n_ghost, n_comp, true);
         this->_phi_buffers.push_back(field);
     }
 }
@@ -35,10 +36,10 @@ RungeKutta::~RungeKutta() {
 
 __global__
 void apply_residual(double *phi, double *phi_new, double *residual, double dt, int n){
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < n; i += stride) {
+    for (int i = index; i < n + 2; i += stride) {
         phi_new[i] =  phi[i] + residual[i] * dt;
     }
 }
@@ -47,8 +48,8 @@ StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
 
-    double dt = _cfl * equation.allowable_dt(*_phi_buffers[0], domain);
 
+    double dt = _cfl * equation.allowable_dt(*_phi_buffers[0], domain);
     for (int stage = 0; stage < _n_stages; stage++){
         fill_boundaries(*_phi_buffers[stage], domain, equation);
         equation.eval_residual(*_phi_buffers[stage], *_residual, domain);
@@ -103,7 +104,9 @@ void RungeKutta::_write_solution() {
     // write contents of cpu buffer to file
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
-    for (unsigned i = 0; i < _phi_cpu->size(); i++){
+    int start = _phi_cpu->number_components();
+    int stop = (_phi_cpu->length()+1) * _phi_cpu->number_components();
+    for (unsigned i = start; i < stop; i++){
         file << std::setprecision(16) << (*_phi_cpu).flat_index(i);
         file << "\n";
     }
@@ -130,18 +133,20 @@ void RungeKutta::set_initial_condition() {
     // read initial condition from file
     std::ifstream initial_condition("solution/phi_0.beq");
     std::string phi_ic;
-    unsigned i = 0;
+    unsigned i = _phi_cpu->number_components();
     double *phi = _phi_cpu->data();
     while (getline(initial_condition, phi_ic)) {
-        if (i >= _phi_cpu->size()) {
+        if (i > (_phi_cpu->length()+1)*_phi_cpu->number_components()) {
             initial_condition.close();
+            std::cerr << "Too many values in IC" << std::endl;
             throw new std::runtime_error("Too many values in IC");
         }
         phi[i] = std::stod(phi_ic); 
         i++;
     }
     initial_condition.close();
-    if (i != _phi_cpu->size()){
+    if (i != (_phi_cpu->length()+1)*_phi_cpu->number_components()){
+        std::cerr << "Too few values in IC" << std::endl;
         throw new std::runtime_error("Too few values in IC");
     }
 

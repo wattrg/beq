@@ -14,6 +14,12 @@ def initial_condition(x):
 config.domain = Domain()
 config.domain.number_cells = n
 config.domain.length = L
+config.domain.left_boundary = BoundaryCondition(
+    type=BoundaryType.Dirichlet, value = initial_condition(0)
+)
+config.domain.right_boundary = BoundaryCondition(
+    type=BoundaryType.Dirichlet, value = initial_condition(L)
+)
 
 config.gas_model = GasModel("air")
 

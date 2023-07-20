@@ -24,71 +24,30 @@ __global__
 void eval_boltzmann_residual(double *phi, double *residual, 
                              double dx, double dv, int nc, int nv, double min_v)
 {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int ci = index; ci < nc; ci += stride) {
+    for (int ci = index; ci < nc+1; ci += stride) {
         for (int vi = 0; vi < nv; vi++) {
             double phi_minus, phi_plus;
             double v = min_v + (vi + 0.5) * dv;
 
             int v_index = vi*nc;
 
-            // left boundary
-            if (ci == 0) {
-                if (v > 0.0) {
-                    // right moving particles
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + nc-1];
-                }
-                else if (v < 0.0){
-                    // left moving particles
-                    phi_plus = phi[v_index + ci + 1];
-                    phi_minus = phi[v_index + ci];
-                }
-                else {
-                    // stationary particles
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + ci];
-                }
+            if (v < 0.0) {
+                // left moving particles
+                phi_plus = phi[v_index + ci + 1];
+                phi_minus = phi[v_index + ci];
             }
-
-            // right boundary
-            else if (ci == nc-1) {
-                if (v < 0.0) {
-                    // left moving particle
-                    phi_plus = phi[v_index + 0];
-                    phi_minus = phi[v_index + ci];
-                }
-                else if (v > 0.0) {
-                    // right moving particle
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + ci - 1];
-                }
-                else {
-                    // stationary particles
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + ci];
-                }
+            else if (v > 0.0) {
+                // right moving particles
+                phi_plus = phi[v_index + ci];
+                phi_minus = phi[v_index + ci - 1];
             }
-            
             else {
-                // interior cell
-                if (v < 0.0) {
-                    // left moving particles
-                    phi_plus = phi[v_index + ci + 1];
-                    phi_minus = phi[v_index + ci];
-                }
-                else if (v > 0.0) {
-                    // right moving particles
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + ci - 1];
-                }
-                else {
-                    // stationary particles
-                    phi_plus = phi[v_index + ci];
-                    phi_minus = phi[v_index + ci];
-                }
+                // stationary particles
+                phi_plus = phi[v_index + ci];
+                phi_minus = phi[v_index + ci];
             }
 
             residual[v_index + ci] = v * (phi_plus - phi_minus) / dx;
@@ -121,7 +80,7 @@ double Boltzmann::allowable_dt(Field<double> &phi, Domain &domain){
 
 __global__
 void check_phi_gpu(double *phi, bool *valid, int nc, int nv) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x+1;
     int stride = blockDim.x * gridDim.x;
 
     for (int ci = index; ci < nc; ci += stride) {

@@ -13,15 +13,9 @@ enum class StepResult {Success, Failure};
 class Solver {
 public:
     virtual ~Solver() {};
-    void solve(Equation &equation, Domain &domain) {
+    int solve(Equation &equation, Domain &domain) {
         while (true) {
             StepResult step_result = _take_step(equation, domain);
-
-            if (step_result == StepResult::Failure) {
-                // for now, we'll just give up
-                std::cerr << "Failed to take a step at step " << _step_num << std::endl;
-                throw std::runtime_error("Failed to take a step");
-            }
 
             _step_num++;
 
@@ -34,12 +28,22 @@ public:
                 _write_solution();
             }
 
+            if (step_result == StepResult::Failure) {
+                // for now, we'll just give up
+                std::cerr << "Failure taking step " << _step_num << std::endl;
+                _write_solution();
+                return 1;
+            }
+
             if (stop) {
                 std::cout << "Stopping: " << _stop_reason() << std::endl;
                 break;
             }
 
         }
+
+        // if we made it here, we exited the loop cleanly, so we were successful.
+        return 0;
     }
 
 

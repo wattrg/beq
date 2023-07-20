@@ -20,6 +20,15 @@ public:
     Domain(json json_data) {
         _length = json_data.at("length");
         _number_cells = json_data.at("number_cells");
+
+        // read the boundary data
+        _left_boundary = boundary_type_from_string(
+            json_data.at("left_boundary").at("type")
+        );
+
+        _right_boundary = boundary_type_from_string(
+            json_data.at("right_boundary").at("type")
+        );
     }
 
     double length() const {return _length;}
@@ -32,6 +41,8 @@ public:
     std::vector<double> left_boundary_value() { return _left_boundary_value; }
     std::vector<double> right_boundary_value() { return _right_boundary_value; }
 
+    unsigned number_ghost () const { return _number_ghost; }
+
     unsigned block_size() const {
         return BLOCK_SIZE;
     }
@@ -43,6 +54,7 @@ public:
 private:
     double _length;
     unsigned _number_cells;
+    unsigned _number_ghost = 1;
 
     BoundaryType _left_boundary;
     std::vector<double> _left_boundary_value;

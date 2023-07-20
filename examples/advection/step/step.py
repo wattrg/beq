@@ -24,6 +24,8 @@ config.solver.cfl = 1.0
 config.domain = Domain()
 config.domain.number_cells = n
 config.domain.length = L
+config.domain.left_boundary = BoundaryCondition(type=BoundaryType.Periodic)
+config.domain.right_boundary = BoundaryCondition(type=BoundaryType.Periodic)
 
 config.equation = Advection()
 config.equation.velocity = u

@@ -8,19 +8,13 @@ Advection::Advection(json json_data) {
 }
 __global__
 void eval_advection_residual(double *phi, double *residual, double u, double dx, int n) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < n; i += stride) {
+    for (int i = index; i < n+2; i += stride) {
         double phi_minus, phi_plus;
-        if (i == 0) {
-            phi_minus = phi[n-1];
-            phi_plus = phi[i];
-        }
-        else {
-            phi_minus = phi[i-1];
-            phi_plus = phi[i];
-        }
+        phi_plus = phi[i];
+        phi_minus = phi[i-1];
         residual[i] = -u * (phi_plus - phi_minus) / dx;
     }
 }

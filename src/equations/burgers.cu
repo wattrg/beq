@@ -22,19 +22,13 @@ Burgers::~Burgers() {
 
 __global__
 void eval_burgers_residual(double *phi, double *residual, double dx, unsigned n) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (unsigned i = index; i < n; i += stride) {
+    for (unsigned i = index; i < n + 2; i += stride) {
         double flux_minus, flux_plus;
-        if (i == 0) {
-            flux_minus = phi[n-1] * phi[n-1];
-            flux_plus = phi[i] * phi[i];
-        }
-        else {
-            flux_minus = phi[i-1] * phi[i-1];
-            flux_plus = phi[i] * phi[i];
-        }
+        flux_minus = phi[i-1] * phi[i-1];
+        flux_plus = phi[i] * phi[i];
         residual[i] = - 0.5 * (flux_plus - flux_minus) / dx;
     }
 }

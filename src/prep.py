@@ -125,7 +125,6 @@ class BoundaryCondition(_JsonData):
             self.type = string_to_boundary_type(self.type)
 
     def to_dict(self):
-        print(self.type)
         return {
             "type": self.type.value,
             "vaue": self.value

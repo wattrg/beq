@@ -91,12 +91,12 @@ int run() {
     Solver * solver = make_solver(config.solver_json(), domain, equation);
 
     solver->set_initial_condition();
-    solver->solve(*equation, domain);  
+    int result = solver->solve(*equation, domain);  
 
     delete solver;
     delete equation;
 
-    return 0;
+    return result;
 }
 
 int post(int argc, char* argv[]){
