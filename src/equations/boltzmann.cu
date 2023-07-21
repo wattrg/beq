@@ -50,7 +50,7 @@ void eval_boltzmann_residual(double *phi, double *residual,
                 phi_minus = phi[v_index + ci];
             }
 
-            residual[v_index + ci] = v * (phi_plus - phi_minus) / dx;
+            residual[v_index + ci] = - v * (phi_plus - phi_minus) / dx;
         } 
     }
 }
@@ -94,7 +94,6 @@ void check_phi_gpu(double *phi, bool *valid, int nc, int nv) {
 }
 
 bool Boltzmann::check_phi(Field<double> &phi, Domain &domain) {
-    return true;
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
 
