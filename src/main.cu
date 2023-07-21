@@ -177,6 +177,7 @@ int main(int argc, char* argv[]) {
             std::filesystem::remove_all("config");
             std::filesystem::remove_all("plot");
             std::filesystem::remove_all("solution");
+            break;
     }
     return flag;
 }

@@ -27,7 +27,7 @@ void eval_boltzmann_residual(double *phi, double *residual,
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int ci = index; ci < nc+2; ci += stride) {
+    for (int ci = index; ci < nc + 2; ci += stride) {
         for (int vi = 0; vi < nv; vi++) {
             double phi_minus, phi_plus;
             double v = min_v + (vi + 0.5) * dv;

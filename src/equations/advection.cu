@@ -13,8 +13,14 @@ void eval_advection_residual(double *phi, double *residual, double u, double dx,
 
     for (int i = index; i < n+2; i += stride) {
         double phi_minus, phi_plus;
-        phi_plus = phi[i];
-        phi_minus = phi[i-1];
+        if (u > 0) {
+            phi_plus = phi[i];
+            phi_minus = phi[i-1];
+        }
+        else {
+            phi_plus = phi[i+1];
+            phi_minus = phi[i];
+        }
         residual[i] = -u * (phi_plus - phi_minus) / dx;
     }
 }

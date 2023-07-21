@@ -35,12 +35,14 @@ RungeKutta::~RungeKutta() {
 }
 
 __global__
-void apply_residual(double *phi, double *phi_new, double *residual, double dt, int n){
+void apply_residual(double *phi, double *phi_new, double *residual, double dt, int nc, int nv){
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < n + 2; i += stride) {
-        phi_new[i] =  phi[i] + residual[i] * dt;
+    for (int ci = index; ci < nc + 2; ci += stride) {
+        for (int vi = 0; vi < nv; vi++){
+            phi_new[vi*nc + ci] =  phi[vi*nc+ci] + residual[vi*nc+ci] * dt;
+        }
     }
 }
 
@@ -56,7 +58,7 @@ StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
 
         apply_residual<<<n_blocks,block_size>>>(
             _phi_buffers[stage]->data(), _phi_buffers[stage]->data(), _residual->data(), 
-            dt, domain.number_cells()
+            dt, domain.number_cells(), equation.number_components()
         );
         auto code = cudaGetLastError();
         if (code != cudaSuccess) {
@@ -87,8 +89,11 @@ std::string RungeKutta::_stop_reason() {
     if (_t >= _max_time) {
         reason = std::string("Reached max_time");
     }
-    if (_step_number() >= _max_steps) {
+    else if (_step_number() >= _max_steps) {
         reason = std::string("Reached max_step");
+    }
+    else {
+        reason = std::string("Unknown reason for stopping");
     }
     return reason;
 }
@@ -104,8 +109,8 @@ void RungeKutta::_write_solution() {
     // write contents of cpu buffer to file
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
-    int start = _phi_cpu->number_components();
-    int stop = (_phi_cpu->length()+1) * _phi_cpu->number_components();
+    unsigned start = _phi_cpu->number_components();
+    unsigned stop = (_phi_cpu->length()+1) * _phi_cpu->number_components();
     for (unsigned i = start; i < stop; i++){
         file << std::setprecision(16) << (*_phi_cpu).flat_index(i);
         file << "\n";
