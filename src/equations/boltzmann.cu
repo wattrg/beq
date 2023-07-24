@@ -50,7 +50,6 @@ void eval_boltzmann_residual(double *phi, double *residual,
                 phi_minus = phi[v_index + ci];
             }
 
-            // printf("ci = %d, vi = %d, fi=%d, phi_minus = %.16e, phi_plus = %.16e\n", ci, vi, v_index+ci, phi_minus, phi_plus);
             residual[v_index + ci] = - v * (phi_plus - phi_minus) / dx;
         } 
     }

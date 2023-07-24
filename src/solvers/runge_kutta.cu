@@ -111,12 +111,20 @@ void RungeKutta::_write_solution() {
     // write contents of cpu buffer to file
     std::string file_name = "solution/phi_" + std::to_string(_n_solutions) + ".beq";
     std::ofstream file(file_name);
-    unsigned start = _phi_cpu->number_components();
-    unsigned stop = (_phi_cpu->length()+1) * _phi_cpu->number_components();
-    for (unsigned i = start; i < stop; i++){
-        file << std::setprecision(16) << (*_phi_cpu).flat_index(i);
-        file << "\n";
+    unsigned nc = _phi_cpu->length();
+    unsigned nv = _phi_cpu->number_components();
+
+    for (unsigned vi = 0; vi < nv; vi++) {
+        for (unsigned ci = 0; ci < nc; ci++) {
+            int index = vi*(nc+2) + ci + 1;
+            file << std::setprecision(16) << (*_phi_cpu).flat_index(index) << "\n";
+        }
     }
+
+    // for (unsigned i = start; i < stop; i++){
+    //     file << std::setprecision(16) << (*_phi_cpu).flat_index(i);
+    //     file << "\n";
+    // }
     file.close();
     _time_since_last_plot = _t - _n_solutions * _plot_frequency;
     _n_solutions++;
@@ -164,15 +172,6 @@ void RungeKutta::set_initial_condition() {
         }
     }
 
-    // while (getline(initial_condition, phi_ic)) {
-    //     if (i > (_phi_cpu->length()+1)*_phi_cpu->number_components()) {
-    //         initial_condition.close();
-    //         std::cerr << "Too many values in IC" << std::endl;
-    //         throw new std::runtime_error("Too many values in IC");
-    //     }
-    //     phi[i] = std::stod(phi_ic); 
-    //     i++;
-    // }
     initial_condition.close();
     if (count != nc*nv){
         std::cerr << "Incorrect number of values in IC" << std::endl;
@@ -189,8 +188,4 @@ void RungeKutta::set_initial_condition() {
         std::cerr << "Cuda error setting initial condition: " << cudaGetErrorString(code) << std::endl;
         throw new std::runtime_error("Encountered cuda error");
     }
-    for (unsigned j = 0; j < _phi_cpu->size(); j++) {
-        std::cout << "phi[" << j << "] = " << phi[j] << "\n";
-    }
-    std::cout << std::endl;
 }
