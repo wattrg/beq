@@ -31,14 +31,14 @@ std::string string_from_boundary_type(BoundaryType type) {
 }
 
 __global__
-void fill_dirichlet(double *phi, double *values, int ci, int nc, int nv) {
+void fill_dirichlet(double *phi, double *values, int ci, int nc, int nv, int ng) {
     for (int vi = 0; vi < nv; vi++) {
-        phi[vi*(nc+2) + ci] = values[vi];
+        phi[vi*(nc+2*ng) + ci] = values[vi];
     }
 }
 
 __global__
-void copy_cell(double *phi, int src_cell, int dest_cell, int nc, int nv) {
+void copy_cell(double *phi, int src_cell, int dest_cell, int nc, int nv, int ng) {
     // phi: the data buffer
     // src_cell: the cell to copy the data from
     // dest_cell: the cell to copy the data to
@@ -46,10 +46,10 @@ void copy_cell(double *phi, int src_cell, int dest_cell, int nc, int nv) {
     // nv: the number of velocities
 
     for (int vi = 0; vi < nv; vi++) {
-        // printf("phi(src=%d, vi=%d, fi=%d) = %.16e, phi(dest=%d, vi=%d, fi=%d) = %.16e\n", src_cell, vi, vi*(nc+2)+src_cell, phi[vi*(nc+2)+src_cell], dest_cell, vi, vi*(nc+2)+dest_cell, phi[vi*(nc+2)+dest_cell] );
-        phi[vi*(nc+2) + dest_cell] = phi[vi*(nc+2) + src_cell];
-        // printf("phi(src=%d, vi=%d, fi=%d) = %.16e, phi(src=%d, vi=%d, fi=%d) = %.16e\n", src_cell, vi, vi*(nc+2)+src_cell, phi[vi*(nc+2)+src_cell], dest_cell, vi, vi*(nc+2)+dest_cell, phi[vi*(nc+2)+dest_cell] );
+        int v_index = vi*(nc+2*ng);
+        phi[v_index+dest_cell] = phi[v_index + src_cell];
     }
+
 }
 
 void fill_boundaries(Field<double> &phi, Domain &domain, Equation &equation) {
@@ -59,13 +59,13 @@ void fill_boundaries(Field<double> &phi, Domain &domain, Equation &equation) {
     // left boundary
     switch (domain.left_boundary()) {
         case BoundaryType::Periodic:
-            copy_cell<<<1,1>>>(phi.data(), nc, 0, nc, nv);
+            copy_cell<<<1,1>>>(phi.data(), nc, 0, nc, nv, 1);
             break;
         case BoundaryType::Neumann:
-            copy_cell<<<1,1>>>(phi.data(), 1, 0, nc, nv);
+            copy_cell<<<1,1>>>(phi.data(), 1, 0, nc, nv, 1);
             break;
         case BoundaryType::Dirichlet:
-            fill_dirichlet<<<1,1>>>(phi.data(), domain.left_boundary_value()->data(), 0, nc, nv);
+            fill_dirichlet<<<1,1>>>(phi.data(), domain.left_boundary_value()->data(), 0, nc, nv, 1);
             break;
         default:
             std::cerr << "Unitialised left boundary" << std::endl;
@@ -75,13 +75,13 @@ void fill_boundaries(Field<double> &phi, Domain &domain, Equation &equation) {
     // right boundary
     switch (domain.right_boundary()) {
         case BoundaryType::Periodic:
-            copy_cell<<<1,1>>>(phi.data(), 1, nc+1, nc, nv);
+            copy_cell<<<1,1>>>(phi.data(), 1, nc+1, nc, nv, 1);
             break;
         case BoundaryType::Neumann:
-            copy_cell<<<1,1>>>(phi.data(), nc, nc+1, nc, nv);
+            copy_cell<<<1,1>>>(phi.data(), nc, nc+1, nc, nv, 1);
             break;
         case BoundaryType::Dirichlet:
-            fill_dirichlet<<<1,1>>>(phi.data(), domain.right_boundary_value()->data(), nc+1, nc, nv);
+            fill_dirichlet<<<1,1>>>(phi.data(), domain.right_boundary_value()->data(), nc+1, nc, nv, 1);
             break;
         default:
             std::cerr << "Unitialised right boundary" << std::endl;

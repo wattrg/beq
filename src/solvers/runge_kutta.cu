@@ -140,7 +140,8 @@ void RungeKutta::set_initial_condition() {
     // read initial condition from file
     std::ifstream initial_condition("solution/phi_0.beq");
     std::string phi_ic;
-    unsigned i = _phi_cpu->number_components();
+    unsigned nc = _phi_cpu->length();
+    unsigned nv = _phi_cpu->number_components();
     double *phi = _phi_cpu->data();
 
     // zero everything to begin.
@@ -148,19 +149,34 @@ void RungeKutta::set_initial_condition() {
         phi[j] = 0.0;
     }
 
-    while (getline(initial_condition, phi_ic)) {
-        if (i > (_phi_cpu->length()+1)*_phi_cpu->number_components()) {
-            initial_condition.close();
-            std::cerr << "Too many values in IC" << std::endl;
-            throw new std::runtime_error("Too many values in IC");
+    unsigned count = 0;
+    for (unsigned vi = 0; vi < _phi_cpu->number_components(); vi++){
+        for (unsigned ci = 0; ci < _phi_cpu->length(); ci++) {
+            if (getline(initial_condition, phi_ic)) {
+                int index = vi*(nc+2) + ci + 1;
+                phi[index] = std::stod(phi_ic);
+                count++;
+            }        
+            else {
+                std::cerr << "Too few values in IC" << std::endl;
+                throw new std::runtime_error("Too few values in IC");
+            }
         }
-        phi[i] = std::stod(phi_ic); 
-        i++;
     }
+
+    // while (getline(initial_condition, phi_ic)) {
+    //     if (i > (_phi_cpu->length()+1)*_phi_cpu->number_components()) {
+    //         initial_condition.close();
+    //         std::cerr << "Too many values in IC" << std::endl;
+    //         throw new std::runtime_error("Too many values in IC");
+    //     }
+    //     phi[i] = std::stod(phi_ic); 
+    //     i++;
+    // }
     initial_condition.close();
-    if (i != (_phi_cpu->length()+1)*_phi_cpu->number_components()){
-        std::cerr << "Too few values in IC" << std::endl;
-        throw new std::runtime_error("Too few values in IC");
+    if (count != nc*nv){
+        std::cerr << "Incorrect number of values in IC" << std::endl;
+        throw new std::runtime_error("Incorrect number of values in IC");
     }
 
     // copy initial condition to GPU buffer
@@ -172,6 +188,9 @@ void RungeKutta::set_initial_condition() {
     if (code != cudaSuccess) {
         std::cerr << "Cuda error setting initial condition: " << cudaGetErrorString(code) << std::endl;
         throw new std::runtime_error("Encountered cuda error");
+    }
+    for (unsigned j = 0; j < _phi_cpu->size(); j++) {
+        std::cout << "phi[" << j << "] = " << phi[j] << "\n";
     }
     std::cout << std::endl;
 }
