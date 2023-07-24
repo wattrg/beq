@@ -51,7 +51,7 @@ class FlowState:
 
 
 class GasModel:
-    _values = ["mass"]
+    _values = ["mass", "gamma"]
     __slots__ = _values
 
     def __init__(self, species=None, **kwargs):
