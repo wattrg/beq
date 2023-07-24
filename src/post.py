@@ -36,6 +36,8 @@ def main():
     if action == Action.ANIMATE_DIRECT:
         repeat = "--repeat" in sys.argv
         direct_animation(repeat)
+    if action == Action.SLIDER_DIRECT:
+        slider_direct()
     elif action == Action.PHI_TO_MACROSCOPIC:
         config = read_config()
         phi_to_macroscopic(config)
@@ -76,10 +78,13 @@ class Action(Enum):
     ANIMATE_DISTRIBUTION = 4
     SLIDER_MACROSCOPIC = 5
     SLIDER_PHI = 6
+    SLIDER_DIRECT = 7
 
 def get_action(action_string):
     if action_string == "animate_direct":
         return Action.ANIMATE_DIRECT
+    elif action_string == "slider_direct":
+        return Action.SLIDER_DIRECT
     elif action_string == "phi_to_macroscopic":
         return Action.PHI_TO_MACROSCOPIC
     elif action_string == "animate_macroscopic":
@@ -238,6 +243,10 @@ def read_phi():
 def direct_animation(repeat=False):
     data = read_phi()
     animate(data, repeat, 20)
+
+def slider_direct():
+    data = read_phi()
+    animate_slider(data)
     
 def animate(data, repeat, interval, x_data=None):
     fig, ax = plt.subplots()
