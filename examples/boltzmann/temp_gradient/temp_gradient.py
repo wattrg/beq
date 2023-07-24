@@ -1,16 +1,14 @@
 import numpy as np
 config.title = "boltzmann quiescent flow"
 
-v = 50
+v = 200
 L = 10
 flow_time = 0.1 * L / v
-n = 1000
+n = 500
 
 n_vel_increments = 500
 
 def initial_condition(x):
-    # T = 273 + 10.0 * x
-    vi = v + 0.0*x
     T = 273 + 100.0*np.exp(-(x-L/2)**2/(2*0.1**2))    
     return FlowState(rho = 1.3, T = T, v = vi)
 
@@ -19,13 +17,13 @@ config.domain.number_cells = n
 config.domain.length = L
 config.domain.left_boundary = BoundaryCondition(
     # type=BoundaryType.Dirichlet, value=initial_condition(0)
-    # type = BoundaryType.Neumann
-    type = BoundaryType.Periodic
+    type = BoundaryType.Neumann
+    # type = BoundaryType.Periodic
 )
 config.domain.right_boundary = BoundaryCondition(
     # type=BoundaryType.Dirichlet, value=initial_condition(L)
-    # type = BoundaryType.Neumann
-    type = BoundaryType.Periodic
+    type = BoundaryType.Neumann
+    # type = BoundaryType.Periodic
 )
 
 config.gas_model = GasModel("air")
