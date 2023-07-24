@@ -39,9 +39,10 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int ci = index; ci < nc + 2; ci += stride) {
+    for (int ci = index; ci < nc + 1; ci += stride) {
         for (int vi = 0; vi < nv; vi++){
-            phi_new[vi*nc + ci] =  phi[vi*nc+ci] + residual[vi*nc+ci] * dt;
+            int v_index = vi*(nc+2);
+            phi_new[v_index+ci] =  phi[v_index+ci] + residual[v_index+ci] * dt;
         }
     }
 }
@@ -54,6 +55,7 @@ StepResult RungeKutta::_take_step(Equation &equation, Domain &domain) {
     double dt = _cfl * equation.allowable_dt(*_phi_buffers[0], domain);
     for (int stage = 0; stage < _n_stages; stage++){
         fill_boundaries(*_phi_buffers[stage], domain, equation);
+
         equation.eval_residual(*_phi_buffers[stage], *_residual, domain);
 
         apply_residual<<<n_blocks,block_size>>>(
@@ -140,6 +142,12 @@ void RungeKutta::set_initial_condition() {
     std::string phi_ic;
     unsigned i = _phi_cpu->number_components();
     double *phi = _phi_cpu->data();
+
+    // zero everything to begin.
+    for (unsigned j = 0; j < _phi_cpu->size(); j++){
+        phi[j] = 0.0;
+    }
+
     while (getline(initial_condition, phi_ic)) {
         if (i > (_phi_cpu->length()+1)*_phi_cpu->number_components()) {
             initial_condition.close();
@@ -165,4 +173,5 @@ void RungeKutta::set_initial_condition() {
         std::cerr << "Cuda error setting initial condition: " << cudaGetErrorString(code) << std::endl;
         throw new std::runtime_error("Encountered cuda error");
     }
+    std::cout << std::endl;
 }

@@ -2,4 +2,4 @@ set -e
 beq clean
 beq prep quiescent.py
 beq run
-beq post animate_macroscopic density
+beq post slider_macroscopic density

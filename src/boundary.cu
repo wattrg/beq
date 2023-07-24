@@ -32,10 +32,8 @@ std::string string_from_boundary_type(BoundaryType type) {
 
 __global__
 void fill_dirichlet(double *phi, double *values, int ci, int nc, int nv) {
-    if (threadIdx.x == 0){
-        for (int vi = 0; vi < nv; vi++) {
-            phi[vi*nc + ci] = values[vi];
-        }
+    for (int vi = 0; vi < nv; vi++) {
+        phi[vi*(nc+2) + ci] = values[vi];
     }
 }
 
@@ -47,10 +45,10 @@ void copy_cell(double *phi, int src_cell, int dest_cell, int nc, int nv) {
     // nc: the number of cells
     // nv: the number of velocities
 
-    if (threadIdx.x == 0) {
-        for (int vi = 0; vi < nv; vi++) {
-            phi[vi*nc + dest_cell] = phi[vi*nc + src_cell];
-        }
+    for (int vi = 0; vi < nv; vi++) {
+        // printf("phi(src=%d, vi=%d, fi=%d) = %.16e, phi(dest=%d, vi=%d, fi=%d) = %.16e\n", src_cell, vi, vi*(nc+2)+src_cell, phi[vi*(nc+2)+src_cell], dest_cell, vi, vi*(nc+2)+dest_cell, phi[vi*(nc+2)+dest_cell] );
+        phi[vi*(nc+2) + dest_cell] = phi[vi*(nc+2) + src_cell];
+        // printf("phi(src=%d, vi=%d, fi=%d) = %.16e, phi(src=%d, vi=%d, fi=%d) = %.16e\n", src_cell, vi, vi*(nc+2)+src_cell, phi[vi*(nc+2)+src_cell], dest_cell, vi, vi*(nc+2)+dest_cell, phi[vi*(nc+2)+dest_cell] );
     }
 }
 

@@ -57,7 +57,7 @@ struct Field {
     unsigned length () const { return _length; }
     unsigned number_components () const { return _components; }
     unsigned size() const { return _components * (_length+2*_nghost); }
-    std::size_t memory() const { return _components * (_length+2*_nghost) * sizeof(T); }
+    std::size_t memory() const { return size() * sizeof(T); }
     T* data() { return _data; }
 
 private:

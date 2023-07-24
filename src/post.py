@@ -272,6 +272,7 @@ def animate(data, repeat, interval, x_data=None):
 
 def animate_slider(data, x_data=None):
     fig, ax = plt.subplots()
+    fig.subplots_adjust(bottom=0.2)
     ax_slider = fig.add_axes([0.25, 0.1, 0.65, 0.03])
     values = np.arange(0, len(data), 1)
     slider = Slider(

@@ -27,12 +27,18 @@ void eval_boltzmann_residual(double *phi, double *residual,
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int ci = index; ci < nc + 2; ci += stride) {
+    // if (index == 1) {
+    //     for (int i = 0; i < (nc+2)*nv; i++) {
+    //         printf("i = %d, phi = %.16e\n", i, phi[i]);        
+    //     }
+    // }
+
+    for (int ci = index; ci < nc + 1; ci += stride) {
         for (int vi = 0; vi < nv; vi++) {
             double phi_minus, phi_plus;
             double v = min_v + (vi + 0.5) * dv;
 
-            int v_index = vi*nc;
+            int v_index = vi*(nc+2);
 
             if (v < 0.0) {
                 // left moving particles
@@ -50,6 +56,7 @@ void eval_boltzmann_residual(double *phi, double *residual,
                 phi_minus = phi[v_index + ci];
             }
 
+            // printf("ci = %d, vi = %d, fi=%d, phi_minus = %.16e, phi_plus = %.16e\n", ci, vi, v_index+ci, phi_minus, phi_plus);
             residual[v_index + ci] = - v * (phi_plus - phi_minus) / dx;
         } 
     }
@@ -83,9 +90,9 @@ void check_phi_gpu(double *phi, bool *valid, int nc, int nv) {
     int index = blockIdx.x * blockDim.x + threadIdx.x+1;
     int stride = blockDim.x * gridDim.x;
 
-    for (int ci = index; ci < nc; ci += stride) {
+    for (int ci = index; ci < nc+1; ci += stride) {
         for (int vi = 0; vi < nv; vi++){
-            if (phi[vi*nc + ci] < -1.0) {
+            if (phi[vi*(nc+2) + ci] < -1.0) {
                 printf("ci = %d, vi = %d, phi = %.16e\n", ci, vi, phi[vi*nc + ci]);
                 *valid = false;
             }
