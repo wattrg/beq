@@ -4,10 +4,13 @@ from enum import Enum
 import os
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Slider
 import numpy as np
 import glob
 import sys
 import json
+
+from numpy.lib import NumpyVersion
 
 from prep import Config, kB
 
@@ -49,6 +52,17 @@ def main():
         config = read_config()
         cell_i = int(sys.argv[2])
         animate_distribution(config, cell_i)
+    elif action == Action.SLIDER_PHI:
+        config = read_config()
+        cell_i = int(sys.argv[2])
+        slider_distribution(config, cell_i)
+    elif action == Action.SLIDER_MACROSCOPIC:
+        variable = sys.argv[2]
+        if not os.path.exists("plot"):
+            config = read_config()
+            phi_to_macroscopic(config)
+        slider_macroscopic(variable)
+        
 
 def read_config():
     with open("config/config.json", "r") as config_file:
@@ -60,6 +74,8 @@ class Action(Enum):
     PHI_TO_MACROSCOPIC = 2
     ANIMATE_MACROSCOPIC = 3
     ANIMATE_DISTRIBUTION = 4
+    SLIDER_MACROSCOPIC = 5
+    SLIDER_PHI = 6
 
 def get_action(action_string):
     if action_string == "animate_direct":
@@ -70,6 +86,10 @@ def get_action(action_string):
         return Action.ANIMATE_MACROSCOPIC
     elif action_string == "animate_distribution":
         return Action.ANIMATE_DISTRIBUTION
+    elif action_string == "slider_macroscopic":
+        return Action.SLIDER_MACROSCOPIC
+    elif action_string == "slider_phi":
+        return Action.SLIDER_PHI
     else:
         return Action.ANIMATE_DIRECT
 
@@ -88,6 +108,22 @@ def animate_distribution(config, cell_i, interval=20, repeat=False):
         distributions.append(phis[:, cell_i])
     
     animate(distributions, repeat, interval, vels)
+
+def slider_distribution(config, cell_i):
+    data = read_phi()
+    nc = config.domain.number_cells
+    min_v = config.equation.min_v
+    max_v = config.equation.max_v
+    nv = config.equation.n_vel_increments
+    dv = (max_v - min_v) / nv
+    vels = np.linspace(min_v+dv/2, max_v-dv/2, nv)
+    
+    distributions = []
+    for time_i in range(len(data)):
+        phis = data[time_i].reshape((nv, nc))
+        distributions.append(phis[:, cell_i])
+
+    animate_slider(distributions, vels)
 
 def phi_to_macroscopic(config):
     """
@@ -176,6 +212,16 @@ def plot_macroscopic(var, repeat=False):
         data.append(np.loadtxt(f"plot/{i}/{var}.beq"))
 
     animate(data, repeat, 20)
+
+def slider_macroscopic(var):
+    folders = next(os.walk("plot"))[1]
+    number_solutions = len(folders)
+
+    data = []
+    for i in range(number_solutions):
+        data.append(np.loadtxt(f"plot/{i}/{var}.beq"))
+
+    animate_slider(data)
     
 def read_phi():
     """
@@ -214,6 +260,31 @@ def animate(data, repeat, interval, x_data=None):
     _ = FuncAnimation(fig, animate, repeat=repeat, init_func=init,
                       frames=len(data), interval=interval)
     plt.show()
+
+def animate_slider(data, x_data=None):
+    fig, ax = plt.subplots()
+    ax_slider = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+    values = np.arange(0, len(data), 1)
+    slider = Slider(
+        ax=ax_slider,
+        label="Step",
+        valmin=0,
+        valmax=len(data)-1,
+        valstep=values,
+        valinit=0,
+    )
+
+    initial_data = data[0]
+    if x_data is None:
+        x_data = np.arange(0, len(initial_data), 1)
+    line, = ax.plot(x_data, initial_data)
+
+    def update(step):
+        line.set_ydata(data[step])
+    slider.on_changed(update)
+
+    plt.show()
+
 
 if __name__ == "__main__":
     main()    
