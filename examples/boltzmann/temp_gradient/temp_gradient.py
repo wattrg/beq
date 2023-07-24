@@ -5,10 +5,10 @@ v = 200
 L = 10
 flow_time = 0.1 * L / v
 n = 500
-
-n_vel_increments = 500
+n_vel_increments = 100
 
 def initial_condition(x):
+    vi = v + 0.0*x
     T = 273 + 100.0*np.exp(-(x-L/2)**2/(2*0.1**2))    
     return FlowState(rho = 1.3, T = T, v = vi)
 
