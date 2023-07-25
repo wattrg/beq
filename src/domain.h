@@ -1,5 +1,5 @@
-#ifndef __DOMAIN_H_
-#define __DOMAIN_H_
+#ifndef DOMAIN_H_
+#define DOMAIN_H_
 
 #include <json.hpp>
 #include <vector>

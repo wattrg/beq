@@ -1,5 +1,5 @@
-#ifndef __FIELD_H_
-#define __FIELD_H_
+#ifndef FIELD_H_
+#define FIELD_H_
 
 #include <assert.h>
 #include <stdexcept>
@@ -67,5 +67,6 @@ private:
     unsigned _components;
     bool _gpu;
 };
+
 
 #endif

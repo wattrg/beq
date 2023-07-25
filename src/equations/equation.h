@@ -1,5 +1,5 @@
-#ifndef __EQUATION_H_
-#define __EQUATION_H_
+#ifndef EQUATION_H_
+#define EQUATION_H_
 
 #include <json.hpp>
 #include "../field.h"   

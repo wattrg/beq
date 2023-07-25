@@ -1,5 +1,5 @@
-#ifndef _BOUNDARY_H_
-#define _BOUNDARY_H_
+#ifndef BOUNDARY_H_
+#define BOUNDARY_H_
 
 #include "field.h"
 

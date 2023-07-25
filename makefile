@@ -19,13 +19,14 @@ LIBDIR     := build/lib
 RESOURCES  := resources
 RESDIR     := res
 SRCEXT     := cu
+HEADEXT    := h
 DEPEXT     := d
 OBJEXT     := o
 
 #Flags, Libraries and Includes
-CFLAGS      := -Wextra -Wall -fPIC -fopenmp -std=c++17
+CFLAGS      := -Wextra -Wall -std=c++17
 LIB         := -lm
-INC         := -I$(INCDIR) -I/usr/local/include -I/usr/include/python3.9 -lpython3.9
+INC         := -I$(INCDIR) -I/usr/local/include # -I/usr/include/python3.9 -lpython3.9
 INCDEP      := -I$(INCDIR)
 
 
@@ -102,6 +103,7 @@ directories:
 	@mkdir -p $(BUILDDIR)
 	@mkdir -p $(BUILDDIR)/solvers
 	@mkdir -p $(BUILDDIR)/equations
+	@mkdir -p $(BUILDDIR)/collisions
 	@mkdir -p $(LIBDIR)
 	@mkdir -p $(LIBINSTDIR)
 
