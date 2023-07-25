@@ -11,7 +11,7 @@ public:
     virtual ~CollisionOperator() {};
 
     virtual void 
-    collide(Field<double> &phi, Domain &domain, Equation &equation) = 0;
+    collide(Field<double> &phi, Field<double> &residual, Domain &domain, Equation &equation) = 0;
 };
 
 class BGK : public CollisionOperator {
@@ -19,7 +19,7 @@ public:
     ~BGK();
     BGK(CollisionFrequency *frequency);
 
-    void collide(Field<double> &phi, Domain &domain, Equation &eqation);
+    void collide(Field<double> &phi, Field<double> &residual, Domain &domain, Equation &eqation);
 
 private:
     CollisionFrequency *_frequency_gpu;

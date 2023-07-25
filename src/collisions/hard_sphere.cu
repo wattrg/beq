@@ -15,5 +15,5 @@ HardSphere::HardSphere(const HardSphere &hard_sphere) {
 
 __host__ __device__ 
 double HardSphere::collision_frequency(double temp, double n) {
-    return 16 * PI * n * n * _r_squared * sqrt(_R * temp);
+    return 16 * PI * n * _r_squared * sqrt(_R * temp);
 }
