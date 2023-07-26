@@ -87,7 +87,7 @@ int run() {
     Config config = Config("config/config.json");
 
     Domain domain(config.domain_json());
-    Equation * equation = create_equation(config.equation_json());
+    Equation * equation = create_equation(config.equation_json(), config.gas_model());
     Solver * solver = make_solver(config.solver_json(), domain, equation);
 
     solver->set_initial_condition();

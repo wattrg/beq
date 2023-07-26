@@ -1,10 +1,11 @@
 #include "equation.h"
 
-Boltzmann::Boltzmann(json json_data) {
+Boltzmann::Boltzmann(json json_data, json gas_model) {
     _min_v = json_data.at("min_v");
     _max_v = json_data.at("max_v");
     _nv = json_data.at("n_vel_increments");
     _dv = (_max_v - _min_v) / _nv;
+    _mass = gas_model.at("mass");
 
     auto code = cudaMalloc(&_phi_valid_gpu, sizeof(bool));
 
@@ -18,6 +19,9 @@ Boltzmann::Boltzmann(json json_data) {
         std::cerr << "Failed to set phi_valid to true: " << cudaGetErrorString(code) << std::endl;
         throw std::runtime_error("Failed to set phi_vaild to true");
     }
+
+    auto collision_operator_json = json_data.at("collision_operator");
+    _collisions = make_collision_operator(collision_operator_json, gas_model);
 }
 
 __global__
@@ -70,6 +74,8 @@ void Boltzmann::eval_residual(Field<double> &phi, Field<double> &residual,
         std::cerr << "Cuda error in Boltzmann residual eval: " << cudaGetErrorString(code) << std::endl;
         throw new std::runtime_error("Encountered cuda error");
     }
+
+    _collisions->collide(phi, residual, domain, *this, _min_v, _dv, _mass);
 }
 
 double Boltzmann::allowable_dt(Field<double> &phi, Domain &domain){

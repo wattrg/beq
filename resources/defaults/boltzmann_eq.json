@@ -2,5 +2,9 @@
     "type": "boltzmann",
     "min_v": -100,
     "max_v": 100,
-    "n_vel_increments": 10
+    "n_vel_increments": 10,
+    "collision_operator": {
+        "type": "BGK",
+        "collision_frequency": {"type": "hard_sphere"}
+    }
 }

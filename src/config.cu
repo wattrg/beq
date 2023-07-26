@@ -22,3 +22,7 @@ json Config::solver_json() {
     return _json_data.at("solver");
 }
 
+json Config::gas_model() {
+    return _json_data.at("gas_model");
+}
+

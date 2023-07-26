@@ -51,7 +51,7 @@ class FlowState:
 
 
 class GasModel:
-    _values = ["mass", "gamma"]
+    _values = ["mass", "gamma", "radius"]
     __slots__ = _values
 
     def __init__(self, species=None, **kwargs):
@@ -283,10 +283,67 @@ def make_solver(solver_config):
     else:
         raise Exception("Unknown solver type")
 
+
+
+class HardSphere(_JsonData):
+    _json_values = ["type"]
+    __slots__ = _json_values
+    _type = "hard_sphere"
+    _default = "hard_sphere.json"
+
+    def __init__(self, **kwargs):
+        self.type = self._type
+        super().__init__(**kwargs)
+
+def make_collision_frequency_model(mu_type, **kwargs):
+    if mu_type == "hard_sphere":
+        return HardSphere(**kwargs)
+    raise Exception(f"Unknown collision frequency model: {mu_type}")
+
+def default_collision_frequency_model():
+    beq = os.environ["BEQ"]
+    with open(f"{beq}/resources/defaults/collision_frequency.default") as f:
+        collision_frequency = f.read().rstrip()
+    return make_collision_frequency_model(collision_frequency)
+
+
+class BGK(_JsonData):
+    _json_values = [
+        "type",
+    ]
+
+    _python_values = [
+        "collision_frequency",
+    ]
+    __slots__ = _json_values + _python_values
+    _type = "BGK"
+    _default = "bgk.json"
+
+    def __init__(self, **kwargs):
+        self.type = self._type
+        self.collision_frequency = default_collision_frequency_model()
+        super().__init__(**kwargs)
+
+    def to_dict(self):
+        dictionary = super().to_dict()
+        dictionary["collision_frequency"] = self.collision_frequency.to_dict()
+        return dictionary
+
+def make_collision_operator(collision_type, **kwargs):
+    if collision_type == "BGK":
+        return BGK(**kwargs)
+    raise Exception(f"Unknown collision operator: {collision_type}")
+
+def default_collision_operator():
+    beq = os.environ["BEQ"]
+    with open(f"{beq}/resources/defaults/collision_operator.default", "r") as f:
+        collision_operator = f.read().rstrip()
+    return make_collision_operator(collision_operator)
+
+
 class FieldType(Enum):
     DIRECT = 1
     EQUILIBRIUM = 2
-
 
 
 class Domain(_JsonData):
@@ -351,7 +408,10 @@ class Boltzmann(_JsonData):
         "max_v",
         "n_vel_increments",
     ]
-    __slots__ = _json_values
+    _python_values = [
+        "collision_operator"
+    ]
+    __slots__ = _json_values + _python_values
 
     _default = "boltzmann_eq.json"
     _type = "boltzmann"
@@ -359,7 +419,13 @@ class Boltzmann(_JsonData):
 
     def __init__(self, **kwargs):
         self.type = self._type
+        self.collision_operator = default_collision_operator()
         super().__init__(**kwargs)
+
+    def to_dict(self):
+        dictionary = super().to_dict()
+        dictionary["collision_operator"] = self.collision_operator.to_dict()
+        return dictionary
 
 def make_equation(config):
     """
@@ -399,6 +465,8 @@ def prep():
         "GasModel": GasModel,
         "BoundaryCondition": BoundaryCondition,
         "BoundaryType": BoundaryType,
+        "BGK": BGK,
+        "HardSphere": "HardSphere",
     }
     with open(prep_script, "r") as f:
         exec(f.read(), namespace)

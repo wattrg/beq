@@ -15,6 +15,7 @@ public:
     json domain_json();
     json equation_json();
     json solver_json();
+    json gas_model();
     std::string title() {return _title;}
 
 private:

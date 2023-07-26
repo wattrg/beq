@@ -4,6 +4,7 @@
 #include <json.hpp>
 #include "../field.h"   
 #include "../domain.h"
+#include "../collisions/operator.h"
 
 using json = nlohmann::json;
 
@@ -54,14 +55,17 @@ private:
     int _min_dt_cpu;
 };
 
+class CollisionOperator;
+
 class Boltzmann : public Equation {
 public:
-    Boltzmann(json json_data);
+    Boltzmann(json json_data, json gas_model);
     ~Boltzmann(){
         cudaFree(_phi_valid_gpu);
     }
 
-    void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain);
+    void eval_residual(Field<double> &phi, Field<double> &residual, 
+                       Domain &domain);
 
     double allowable_dt(Field<double> &phi, Domain &domain);
 
@@ -72,6 +76,8 @@ public:
     bool check_phi(Field<double> &phi, Domain &domain);
 
 private:
+    CollisionOperator *_collisions;
+    double _mass;
     double _dv;
     double _min_v;
     double _max_v;
@@ -79,6 +85,6 @@ private:
     bool *_phi_valid_gpu;
 };
 
-Equation * create_equation(json json_data);
+Equation * create_equation(json json_data, json gas_model);
 
 #endif

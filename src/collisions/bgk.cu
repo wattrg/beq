@@ -1,13 +1,22 @@
 #include "operator.h"
 #include "../constants.h"
 #include <json.hpp>
+#include <stdexcept>
 
 BGK::BGK(CollisionFrequency *frequency) {
     _frequency_cpu = frequency;
-    cudaMalloc(&_frequency_gpu, sizeof(*frequency));
+    auto code = cudaMalloc(&_frequency_gpu, sizeof(*frequency));
+    if (code != cudaSuccess) {
+        std::cerr << "cudaMalloc failure: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("");
+    }
 
     // assume that the CollisionFrequency model doesn't contain pointers else where
-    cudaMemcpy(_frequency_gpu, _frequency_cpu, sizeof(*frequency), cudaMemcpyHostToDevice);
+    code = cudaMemcpy(_frequency_gpu, _frequency_cpu, sizeof(*frequency), cudaMemcpyHostToDevice);
+    if (code != cudaSuccess) {
+        std::cerr << "cudaMemcpy failure: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("");
+    }
 }
 
 BGK::~BGK() {
@@ -36,6 +45,7 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
             n_particles += phi[v_index + ci];
             v_avg += v * phi[v_index + ci]; 
         } 
+        v_avg /= n_particles;
 
         // compute thermal energy for this cell
         for (int vi = 0; vi < nv; vi++) {
@@ -44,13 +54,16 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
 
             thermal_energy += (v - v_avg) * (v - v_avg) * phi[v_index + ci];
         }
+        thermal_energy /= n_particles;
 
         // macroscopic properties for this cell
         double density = mass * n_particles / volume;
         double temp = 2 * thermal_energy / (density * R);
 
         // collision frequency for this cell
+        printf("Before calling collision frequency");
         double mu = frequency->collision_frequency(temp, n_particles);
+        printf("After calling collision frequency");
 
         // apply collisions for this cell
         for (int vi = 0; vi < nv; vi++) {
@@ -67,8 +80,22 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
     }
 }
 
-void BGK::collide(Field<double> &phi, Field<double> &residual, Domain &domain, Equation &equation) {
-    (void) phi;
-    (void) domain;
-    (void) equation;
+void BGK::collide(Field<double> &phi, Field<double> &residual, 
+                  Domain &domain, Equation &equation, double min_v, 
+                  double dv, double mass) 
+{
+    unsigned n_blocks = domain.number_blocks();
+    unsigned block_size = domain.block_size();
+
+    bgk_collide<<<n_blocks, block_size>>>(
+        phi.data(), residual.data(), domain.number_cells(), 
+        equation.number_components(), min_v, dv, mass, 
+        domain.dx(), _frequency_gpu
+    );
+
+    auto code = cudaGetLastError();
+    if (code != cudaSuccess) {
+        std::cerr << "Cuda error in BGK collision term: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("Cuda error");
+    }
 }

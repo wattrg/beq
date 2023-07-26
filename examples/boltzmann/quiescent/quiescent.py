@@ -31,6 +31,7 @@ config.equation = Boltzmann()
 config.equation.min_v = -2000
 config.equation.max_v = 2000
 config.equation.n_vel_increments = n_vel_increments
+config.equation.collision_operator = BGK()
 
 config.solver = RungeKutta()
 config.solver.max_step = 10000
