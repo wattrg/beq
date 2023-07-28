@@ -25,7 +25,7 @@ BGK::~BGK() {
 }
 
 __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, double min_v, 
-                            double dv, double mass, double volume, CollisionFrequency *frequency) {
+                            double dv, double mass, double volume, CollisionFrequency *frequency, double r) {
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
     int stride = blockDim.x * gridDim.x;
 
@@ -37,35 +37,37 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
         double v_avg = 0.0;
         double thermal_energy = 0.0;
 
-        // compute number of particles and velocity for this cell
+        // step 1: Compute moments of the distribution for this cell
+        // compute number of particles and velocity
         for (int vi = 0; vi < nv; vi++) {
             double v = min_v + (vi + 0.5) * dv;
             int v_index = vi*(nc+2);
 
-            n_particles += phi[v_index + ci];
-            v_avg += v * phi[v_index + ci]; 
+            n_particles += phi[v_index + ci] * dv;
+            v_avg += v * phi[v_index + ci] * dv; 
         } 
         v_avg /= n_particles;
 
-        // compute thermal energy for this cell
+        // thermal energy
         for (int vi = 0; vi < nv; vi++) {
             double v = min_v + (vi + 0.5) * dv;
             int v_index = vi*(nc+2);
 
-            thermal_energy += (v - v_avg) * (v - v_avg) * phi[v_index + ci];
+            thermal_energy += (v - v_avg) * (v - v_avg) * phi[v_index + ci] * dv;
         }
-        thermal_energy /= n_particles;
+        thermal_energy = mass * thermal_energy / (2 * volume);
 
-        // macroscopic properties for this cell
+        // step 2: macroscopic properties for this cell
         double density = mass * n_particles / volume;
-        double temp = 2 * thermal_energy / (density * R);
+        double num_density = n_particles / volume;
+        double temp = thermal_energy / (density * 0.5 * R);
+        // printf("v_avg = %.16e, density = %.16e, temp = %.16e\n", v_avg, density, temp);
 
-        // collision frequency for this cell
-        printf("Before calling collision frequency");
-        double mu = frequency->collision_frequency(temp, n_particles);
-        printf("After calling collision frequency");
+        // step 3: collision frequency for this cell
+        double mu = 16.0 * num_density * r * r * sqrt(PI * R * temp);
+        // double mu = frequency->collision_frequency(temp, n_particles);
 
-        // apply collisions for this cell
+        // step 4: apply collisions for this cell
         for (int vi = 0; vi < nv; vi++) {
             double v = min_v + (vi + 0.5) * dv;
             int v_index = vi*(nc+2);
@@ -73,16 +75,18 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
             // compute equilibrium distribution value
             double exponent = -mass / (2*kB*temp) * (v-v_avg) * (v-v_avg); 
             double norm = sqrt(mass / (2 * PI * kB * temp));
-            double f0 = n_particles * norm * exp(exponent);
+            double f0 = num_density * norm * exp(exponent);
 
-            residual[v_index+ci] += n_particles * mu * (f0 - phi[v_index+ci]);
+            // compute the effect of collisions
+            residual[v_index+ci] += mu * num_density * (f0 - phi[v_index+ci]);
+            printf("mu = %.16e, f0 = %.16e, f = %.16e residual = %.16e\n", mu, f0, phi[v_index+ci], f0 - phi[v_index+ci]);
         }
     }
 }
 
 void BGK::collide(Field<double> &phi, Field<double> &residual, 
                   Domain &domain, Equation &equation, double min_v, 
-                  double dv, double mass) 
+                  double dv, double mass, double r) 
 {
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
@@ -90,7 +94,7 @@ void BGK::collide(Field<double> &phi, Field<double> &residual,
     bgk_collide<<<n_blocks, block_size>>>(
         phi.data(), residual.data(), domain.number_cells(), 
         equation.number_components(), min_v, dv, mass, 
-        domain.dx(), _frequency_gpu
+        domain.dx(), _frequency_gpu, r
     );
 
     auto code = cudaGetLastError();

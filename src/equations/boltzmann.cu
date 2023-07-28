@@ -6,6 +6,7 @@ Boltzmann::Boltzmann(json json_data, json gas_model) {
     _nv = json_data.at("n_vel_increments");
     _dv = (_max_v - _min_v) / _nv;
     _mass = gas_model.at("mass");
+    _r = gas_model.at("radius");
 
     auto code = cudaMalloc(&_phi_valid_gpu, sizeof(bool));
 
@@ -75,7 +76,12 @@ void Boltzmann::eval_residual(Field<double> &phi, Field<double> &residual,
         throw new std::runtime_error("Encountered cuda error");
     }
 
-    _collisions->collide(phi, residual, domain, *this, _min_v, _dv, _mass);
+    _collisions->collide(phi, residual, domain, *this, _min_v, _dv, _mass, _r);
+    code = cudaGetLastError();
+    if (code != cudaSuccess) {
+        std::cerr << "Cuda error in collision term: " << cudaGetErrorString(code) << std::endl;
+        throw new std::runtime_error("Encountered cuda error");
+    }
 }
 
 double Boltzmann::allowable_dt(Field<double> &phi, Domain &domain){

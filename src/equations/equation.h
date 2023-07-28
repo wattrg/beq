@@ -78,6 +78,7 @@ public:
 private:
     CollisionOperator *_collisions;
     double _mass;
+    double _r;
     double _dv;
     double _min_v;
     double _max_v;
