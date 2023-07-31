@@ -42,7 +42,7 @@ void apply_residual(double *phi, double *phi_new, double *residual, double dt, i
     for (int ci = index; ci < nc + 1; ci += stride) {
         for (int vi = 0; vi < nv; vi++){
             int v_index = vi*(nc+2);
-            printf("phi = %.16e, residual = %.16e, dt = %.16e\n", phi[v_index+ci], residual[v_index+ci], dt);
+            // printf("phi = %.16e, residual = %.16e, dt = %.16e\n", phi[v_index+ci], residual[v_index+ci], dt);
             phi_new[v_index+ci] =  phi[v_index+ci] + residual[v_index+ci] * dt;
         }
     }

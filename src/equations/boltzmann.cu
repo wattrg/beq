@@ -26,7 +26,7 @@ Boltzmann::Boltzmann(json json_data, json gas_model) {
 }
 
 __global__
-void eval_boltzmann_residual(double *phi, double *residual, 
+void eval_boltzmann_convective_residual(double *phi, double *residual, 
                              double dx, double dv, int nc, int nv, double min_v)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x + 1;
@@ -66,7 +66,7 @@ void Boltzmann::eval_residual(Field<double> &phi, Field<double> &residual,
     unsigned n_blocks = domain.number_blocks();
     unsigned block_size = domain.block_size();
 
-    eval_boltzmann_residual<<<n_blocks, block_size>>>(
+    eval_boltzmann_convective_residual<<<n_blocks, block_size>>>(
         phi.data(), residual.data(), domain.dx(), _dv, domain.number_cells(), _nv, _min_v
     );
 
@@ -76,7 +76,7 @@ void Boltzmann::eval_residual(Field<double> &phi, Field<double> &residual,
         throw new std::runtime_error("Encountered cuda error");
     }
 
-    _collisions->collide(phi, residual, domain, *this, _min_v, _dv, _mass, _r);
+    _collisions->collide(phi, residual, domain, _nv, _min_v, _dv, _mass, _r);
     code = cudaGetLastError();
     if (code != cudaSuccess) {
         std::cerr << "Cuda error in collision term: " << cudaGetErrorString(code) << std::endl;

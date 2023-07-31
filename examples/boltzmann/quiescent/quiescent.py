@@ -1,11 +1,11 @@
 config.title = "boltzmann quiescent flow"
 
 v = 10
-L = 10
-flow_time = L / v
+L = 1
+flow_time = 2 * L / v
 n = 10
 
-n_vel_increments = 10
+n_vel_increments = 20
 
 def initial_condition(x):
     return FlowState(rho = 1.3, T = 273, v = v)
@@ -38,6 +38,6 @@ config.solver.max_step = 10000
 config.solver.max_time = flow_time
 config.solver.print_frequency = 1000
 config.solver.plot_frequency = flow_time / 20
-config.solver.cfl = 1.0
+config.solver.cfl = 0.1
 
 config.initial_condition = initial_condition
