@@ -39,6 +39,28 @@ private:
     double _velocity;
 };
 
+class Diffusion : public Equation {
+public:
+    Diffusion(double diffusivity);
+    Diffusion(json json_data);
+
+    void eval_residual(Field<double> &phi, Field<double> &residual, Domain &domain); 
+
+    double allowable_dt(Field<double> &phi, Domain &domain) { 
+        // trick the compiler into thinking we used phi, so we don't
+        // get unused parameter warnings when compiling
+        (void)phi;
+
+        // compute the allowable time step
+        return domain.dx() * domain.dx() / (2 * _diffusivity); 
+    }
+
+    int number_components() {return 1;}
+
+private:
+    double _diffusivity;
+};
+
 class Burgers : public Equation {
 public:
     Burgers();

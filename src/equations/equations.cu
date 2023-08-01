@@ -6,6 +6,9 @@ Equation * create_equation(json json_data, json gas_model){
     if (type == "advection"){
         eq = new Advection(json_data);
     }
+    else if (type == "diffusion") {
+        eq = new  Diffusion(json_data);
+    }
     else if (type == "burgers") {
         eq = new Burgers();
     }

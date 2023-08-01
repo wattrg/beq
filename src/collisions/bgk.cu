@@ -64,7 +64,6 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
 
         // step 3: collision frequency for this cell
         double mu = 16.0 * n_particles * r * r * sqrt(PI * R * temp);
-        // double mu = sqrt(2.0) * PI * 4 * r * r * v_avg * n_particles / volume;
 
         // step 4: apply collisions for this cell
         for (int vi = 0; vi < nv; vi++) {
@@ -77,7 +76,7 @@ __global__ void bgk_collide(double *phi, double *residual, int nc, int nv, doubl
             double f0 = n_particles * norm * exp(exponent);
 
             // The BGK collision operator
-            residual[v_index+ci] += cbrt(mu) * (f0 - phi[v_index+ci]);
+            // residual[v_index+ci] += cbrt(mu) * (f0 - phi[v_index+ci]);
         }
     }
 }

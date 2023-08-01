@@ -385,6 +385,20 @@ class Advection(_JsonData):
     def __init__(self, **kwargs):
         self.type = self._type
         super().__init__(**kwargs)
+
+class Diffusion(_JsonData):
+    _json_values = [
+        "type",
+        "diffusivity"
+    ]
+    __slots__ = _json_values
+    _default = "diffusion_eq.json"
+    _type = "diffusion"
+    field_type = FieldType.DIRECT
+
+    def __init__(self, **kwargs):
+        self.type = self._type
+        super().__init__(**kwargs)
     
 
 class Burgers(_JsonData):
@@ -459,6 +473,7 @@ def prep():
         "RungeKutta": RungeKutta,
         "Domain": Domain,
         "Advection": Advection,
+        "Diffusion": Diffusion,
         "Burgers": Burgers,
         "Boltzmann": Boltzmann,
         "FlowState": FlowState,
